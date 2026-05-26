@@ -17,7 +17,10 @@ def _engine_args(database_url: str) -> dict:
 
 
 settings = get_settings()
-engine = create_engine(settings.database_url, **_engine_args(settings.database_url))
+database_url = settings.database_url
+if database_url.startswith("postgresql://"):
+    database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+engine = create_engine(database_url, **_engine_args(database_url))
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
 
 
@@ -33,4 +36,3 @@ def get_session() -> Generator[Session, None, None]:
         yield session
     finally:
         session.close()
-

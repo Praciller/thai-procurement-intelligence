@@ -3,8 +3,8 @@
 Recommended free-tier path:
 
 1. Supabase PostgreSQL for `DATABASE_URL`.
-2. Render, Fly.io, or Railway for `apps/api`.
-3. Vercel for `apps/web`.
+2. Vercel Services for both `apps/web` and `apps/api`.
+3. Optional Cloudflare DNS only when using a custom domain.
 
 Backend environment:
 
@@ -20,8 +20,15 @@ Backend environment:
 
 Frontend environment:
 
-- `NEXT_PUBLIC_API_BASE_URL`
+- `NEXT_PUBLIC_API_BASE_URL` (use `/backend/api` on Vercel Services)
 - `NEXT_PUBLIC_DEMO_MODE`
+
+The root `vercel.json` defines two services:
+
+- `web`: `apps/web` at `/`
+- `api`: `apps/api/main.py` at `/backend`
+
+Because Vercel strips the service prefix before forwarding to FastAPI, browser requests should use `/backend/api`.
 
 Run ingestion after deployment:
 
@@ -30,4 +37,3 @@ cd apps/api
 uv run python -m app.jobs.import_csv --file ../../data/sample/procurement_sample.csv --source sample
 uv run python -m app.jobs.generate_embeddings --limit 1000
 ```
-

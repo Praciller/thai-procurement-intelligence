@@ -138,8 +138,7 @@ npm run build
 
 Recommended:
 
-- Frontend: Vercel
-- Backend: Render/Fly.io/Railway
+- Frontend and backend: one Vercel Services project
 - Database: Supabase PostgreSQL
 - Scheduled ingestion: GitHub Actions or provider scheduler
 
