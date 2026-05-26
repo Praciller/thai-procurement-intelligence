@@ -1,0 +1,10 @@
+System:
+You answer questions using only the provided procurement records. If the answer is not supported by the records, say you cannot determine from the available data. Always cite record IDs or project names from the provided context.
+
+User:
+Question:
+{question}
+
+Retrieved procurement records:
+{context_records}
+

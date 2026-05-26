@@ -1,0 +1,1294 @@
+# Thai Public Procurement Intelligence
+# Full Project Specification + Codex Prompt
+# Prepared for: Personal portfolio project for AI Engineer / Data Engineer roles
+
+================================================================================
+1. PROJECT OVERVIEW
+================================================================================
+
+Project name:
+Thai Public Procurement Intelligence
+
+Short description:
+An AI-powered search, analytics, and summarization platform for Thai public procurement open data. The system ingests public procurement datasets, normalizes and stores the data, provides searchable dashboards, supports semantic search, and uses a free/low-cost LLM provider such as Gemini free tier or OpenRouter free models to summarize procurement records and answer questions with evidence.
+
+Primary portfolio goal:
+Show practical ability in AI engineering and data engineering through an end-to-end deployed product:
+- Data ingestion and cleaning
+- Structured data modeling
+- Full-stack application development
+- Search and filtering
+- Semantic retrieval / RAG
+- LLM-based summarization
+- Evidence-based AI assistant
+- Production-minded architecture
+- Free-tier deployment
+
+Target users:
+- Interviewers evaluating AI Engineer / Data Engineer candidates
+- Developers exploring public procurement data
+- Citizens or analysts who want to search Thai procurement records
+- Portfolio reviewers who want a working demo
+
+Key demo story:
+"Paste or search procurement data, filter by province/agency/budget/category, open a procurement record, see normalized fields, view AI-generated summary, and ask questions like:
+- What are the highest-budget IT procurement projects?
+- Which agencies have many projects in a given category?
+- Summarize this procurement notice in simple Thai.
+- Find similar procurement records."
+
+================================================================================
+2. IMPORTANT CONSTRAINTS
+================================================================================
+
+This is a personal project and must be clearly separated from any employer/company work.
+
+Cost constraints:
+- Prefer free-tier services.
+- Avoid paid APIs by default.
+- Use Gemini free tier or OpenRouter free/free-tier models for generative AI.
+- Cache LLM results to avoid repeated calls.
+- Allow AI features to be disabled if no API key is configured.
+
+Deployment constraints:
+- Frontend should be deployable to Vercel free tier.
+- Backend should be deployable to Render/Fly.io/Railway free or low-cost tier, or be containerized for local demo.
+- Database should use Supabase free tier or local PostgreSQL with pgvector.
+- The deployed demo should allow interviewers to try core features without needing private credentials.
+
+UI constraints:
+- Build custom UI with Next.js.
+- Do not use Streamlit, Gradio, Retool, Appsmith, or other low-code dashboard tools.
+- UI must look portfolio-ready.
+
+Data constraints:
+- Use publicly accessible procurement/open government datasets.
+- Do not use confidential company data.
+- The data source must be replaceable and documented.
+- Build a fallback sample dataset seeder so the app works even if the public source changes.
+
+LLM constraints:
+- LLM usage should be optional.
+- LLM provider abstraction must support Gemini and OpenRouter.
+- Store generated summaries in DB so they are not regenerated repeatedly.
+- Never send sensitive/private user data to LLM. This project should use public records only.
+
+================================================================================
+3. SUGGESTED TECH STACK
+================================================================================
+
+Frontend:
+- Next.js 14+ or 15+
+- TypeScript
+- Tailwind CSS
+- shadcn/ui or custom accessible components
+- React Query or SWR for API state
+- Recharts or Tremor-like custom chart components, but do not use full dashboard builders
+
+Backend:
+- FastAPI
+- Python 3.11+
+- Pydantic
+- SQLAlchemy or SQLModel
+- Alembic migrations
+- httpx for data/API fetching
+- Pandas optional for batch cleaning only
+
+Database:
+- PostgreSQL
+- pgvector extension for embeddings
+- Supabase PostgreSQL free tier preferred for hosted demo
+- Local Docker PostgreSQL for development
+
+Search:
+- PostgreSQL full-text search for keyword search
+- pgvector for semantic search
+- Hybrid retrieval by combining keyword score + vector similarity
+
+Embeddings:
+- Prefer free/local embeddings if possible:
+  - sentence-transformers locally for offline embedding generation, OR
+  - Gemini embedding free tier if available, OR
+  - OpenRouter-compatible embedding if available
+- For low-cost deployment, precompute embeddings locally and upload to DB.
+
+LLM:
+- Gemini free tier
+- OpenRouter free model fallback
+- Provider interface:
+  - generate_summary(text)
+  - extract_structured_fields(text)
+  - answer_question(question, context_records)
+
+DevOps:
+- Docker Compose for local development
+- GitHub Actions for lint/test and optional scheduled ingestion
+- Vercel for frontend
+- Render/Fly.io/Railway for backend
+- Supabase for DB
+
+================================================================================
+4. PUBLIC DATA SOURCE STRATEGY
+================================================================================
+
+Primary data source strategy:
+Use Thai public procurement/open government data that can be downloaded as CSV, Excel, JSON, or queried through a public API.
+
+Because public portals may change URLs or access rules over time, implement the ingestion system with a provider interface:
+- data_sources/base.py
+- data_sources/csv_importer.py
+- data_sources/excel_importer.py
+- data_sources/open_api_importer.py
+
+Recommended source types to support:
+1. CSV/Excel file import from open government/procurement datasets.
+2. Manual admin upload of CSV/Excel for demo.
+3. Seed dataset stored in the repository for offline demo.
+
+Minimum dataset fields expected:
+- project_id or generated hash id
+- project_name
+- agency_name
+- province
+- procurement_method
+- procurement_type/category
+- budget_amount
+- winning_amount, if available
+- winner_name, if available
+- announcement_date
+- contract_date, if available
+- source_url, if available
+- raw_text or description
+
+Fallback sample data:
+Create at least 100 synthetic-but-realistic sample records for development/demo if no public dataset is configured. Clearly label it as sample data in the UI.
+
+Do not fabricate claims about real agencies when using sample data. Use obvious sample agency names such as:
+- Sample Provincial Office A
+- Sample Municipality B
+- Sample Hospital C
+
+================================================================================
+5. FUNCTIONAL REQUIREMENTS
+================================================================================
+
+FR-001: Data ingestion
+The system must import procurement records from CSV/Excel files and/or configured public URLs.
+
+Acceptance criteria:
+- User/developer can run ingestion from CLI.
+- Ingestion validates required fields.
+- Ingestion normalizes dates, budgets, province names, agency names.
+- Duplicate records are detected using source id or content hash.
+- Import result reports total inserted, updated, skipped, and failed rows.
+
+FR-002: Data normalization
+The system must normalize raw procurement records into a consistent schema.
+
+Acceptance criteria:
+- Budget values are converted into numeric decimal values.
+- Dates are converted into ISO format.
+- Province and agency text are trimmed and standardized.
+- Missing optional fields are allowed.
+- Invalid records are stored in ingestion_errors table or logged clearly.
+
+FR-003: Procurement search
+The UI must provide searchable procurement records.
+
+Acceptance criteria:
+- Search by keyword.
+- Filter by province.
+- Filter by agency.
+- Filter by date range.
+- Filter by budget range.
+- Filter by procurement method/category.
+- Sort by date, budget, and relevance.
+- Pagination must be supported.
+
+FR-004: Procurement detail page
+Each procurement record must have a detail page.
+
+Acceptance criteria:
+- Shows normalized fields.
+- Shows raw source text/description if available.
+- Shows source URL if available.
+- Shows AI summary if generated.
+- Shows similar procurement records.
+- Shows metadata such as imported_at and updated_at.
+
+FR-005: AI summarization
+The system must generate a concise summary for a procurement record using Gemini/OpenRouter.
+
+Acceptance criteria:
+- Summary is generated only when requested or during controlled batch processing.
+- Summary is cached in DB.
+- UI shows summary generation status.
+- If LLM API is unavailable, UI displays a graceful fallback.
+- Prompt instructs model to summarize only from provided text.
+
+FR-006: Structured AI extraction
+The system should optionally extract structured fields from raw text.
+
+Acceptance criteria:
+- Extracted fields are stored separately from original normalized fields.
+- The UI must distinguish source fields from AI-extracted fields.
+- Include confidence or notes when extraction is uncertain.
+- Do not overwrite source-of-truth fields without explicit logic.
+
+FR-007: Semantic search
+The system must support semantic search over procurement names/descriptions/summaries.
+
+Acceptance criteria:
+- Records have embedding vectors.
+- User can search with natural language queries.
+- Results show similarity score or relevance explanation.
+- Works even if AI answer generation is disabled.
+
+FR-008: Hybrid search
+The system should combine keyword and semantic search.
+
+Acceptance criteria:
+- Keyword-only search works.
+- Semantic-only search works.
+- Hybrid mode returns ranked results using both keyword relevance and vector similarity.
+- The search mode is visible in the UI.
+
+FR-009: AI Q&A assistant
+The system must provide an AI assistant that answers questions based on retrieved procurement records.
+
+Acceptance criteria:
+- User asks a natural language question.
+- Backend retrieves relevant records.
+- LLM answers using only retrieved context.
+- Answer includes cited procurement records.
+- If context is insufficient, answer says it cannot determine.
+- UI shows the records used as evidence.
+
+FR-010: Analytics dashboard
+The UI must include a dashboard summarizing dataset trends.
+
+Acceptance criteria:
+- Total records.
+- Total budget.
+- Records by province.
+- Records by agency.
+- Records by category/method.
+- Monthly trend.
+- Top budget projects.
+- Top agencies by total budget.
+
+FR-011: Similar records
+The detail page must show similar procurement records.
+
+Acceptance criteria:
+- Uses vector similarity or fallback keyword matching.
+- Shows 5 to 10 similar records.
+- Avoids showing the same record as itself.
+
+FR-012: Dataset management page
+A simple admin/developer page or CLI must show ingestion status.
+
+Acceptance criteria:
+- Last import time.
+- Number of records.
+- Number of records with embeddings.
+- Number of records with summaries.
+- Error count.
+- Optionally trigger import in local/dev mode only.
+
+FR-013: Public demo mode
+The deployed app must be usable by interviewers.
+
+Acceptance criteria:
+- Demo has seeded data.
+- Demo does not require login for basic search/dashboard/detail.
+- AI calls may be rate-limited.
+- Demo includes a visible note about data source and limitations.
+
+FR-014: API documentation
+Backend must expose OpenAPI docs.
+
+Acceptance criteria:
+- FastAPI docs available at /docs in non-production or demo mode.
+- Main endpoints are documented with request/response schemas.
+
+FR-015: Export
+The system should allow export of search results.
+
+Acceptance criteria:
+- Export current filtered results as CSV.
+- Respect pagination or allow export limit.
+- Include normalized fields, not embeddings.
+
+================================================================================
+6. NON-FUNCTIONAL REQUIREMENTS
+================================================================================
+
+NFR-001: Cost control
+The system must minimize recurring cost.
+
+Requirements:
+- Cache AI summaries.
+- Cache embeddings.
+- Avoid regenerating on every page load.
+- Use free-tier friendly DB size.
+- Include environment variable to disable LLM features.
+- Provide local-only batch scripts for expensive processing.
+
+NFR-002: Performance
+The app must feel responsive for demo use.
+
+Requirements:
+- Search response target under 1.5 seconds for up to 50k records.
+- Use DB indexes for filters.
+- Use pagination.
+- Use async backend endpoints where useful.
+- Avoid loading all records into memory.
+
+NFR-003: Reliability
+The system must handle imperfect public data.
+
+Requirements:
+- Bad rows must not crash full import.
+- Log failed rows.
+- Retry network fetches with backoff.
+- Validate schemas before DB insert.
+- Provide clear error messages.
+
+NFR-004: Security
+The deployed demo must not expose secrets or allow abuse.
+
+Requirements:
+- Store API keys only in environment variables.
+- Never expose API keys to frontend.
+- Rate limit AI endpoints.
+- Validate upload file size/type.
+- Sanitize user inputs.
+- Avoid executing arbitrary code.
+- CORS must be restricted to frontend domain in production.
+
+NFR-005: Maintainability
+The codebase must be easy to understand.
+
+Requirements:
+- Clear folder structure.
+- Type hints in Python.
+- TypeScript types in frontend.
+- Pydantic schemas for API.
+- DB migrations.
+- README with setup and architecture.
+- Comments for non-obvious logic.
+
+NFR-006: Observability
+The app must provide basic operational visibility.
+
+Requirements:
+- Structured logs for ingestion and AI calls.
+- API request logging.
+- Ingestion status endpoint.
+- Error table or log file for import failures.
+- Optional metrics endpoint if simple to add.
+
+NFR-007: Accessibility
+The UI should be usable and readable.
+
+Requirements:
+- Responsive layout.
+- Keyboard-friendly controls.
+- Sufficient color contrast.
+- Loading/error/empty states.
+- Clear Thai/English text labels.
+
+NFR-008: Explainability
+AI outputs must be transparent.
+
+Requirements:
+- Show source records used for answers.
+- Show "AI-generated" label for summaries.
+- Show when answer is uncertain.
+- Avoid making claims not supported by records.
+
+NFR-009: Portability
+The project must run locally.
+
+Requirements:
+- docker-compose up should start DB and backend dependencies.
+- Frontend and backend setup documented.
+- Seed data script included.
+- .env.example files included.
+
+NFR-010: Separation from employer work
+The project must not contain employer code, employer data, or internal architecture.
+
+Requirements:
+- Use public data only.
+- Use original code.
+- Do not mention employer systems in README except resume context outside the project.
+- Do not copy proprietary logic.
+
+================================================================================
+7. SYSTEM DESIGN
+================================================================================
+
+High-level architecture:
+
+[Public CSV/API/Manual Upload]
+          |
+          v
+[Ingestion Script / FastAPI Import Endpoint]
+          |
+          v
+[Validation + Normalization + Deduplication]
+          |
+          v
+[PostgreSQL + pgvector]
+          |
+          +----------------------+
+          |                      |
+          v                      v
+[FastAPI REST API]         [Background Jobs]
+          |                      |
+          v                      v
+[Next.js Frontend]      [Embedding + Summary Generation]
+          |
+          v
+[User Search / Dashboard / Detail / AI Q&A]
+
+Recommended repository structure:
+
+thai-procurement-intelligence/
+  README.md
+  docker-compose.yml
+  .env.example
+  docs/
+    architecture.md
+    data-source.md
+    prompts.md
+    deployment.md
+    tradeoffs.md
+  apps/
+    web/
+      package.json
+      src/
+        app/
+        components/
+        lib/
+        types/
+    api/
+      pyproject.toml
+      app/
+        main.py
+        config.py
+        database.py
+        models/
+        schemas/
+        routers/
+        services/
+        data_sources/
+        jobs/
+        prompts/
+        utils/
+      alembic/
+      tests/
+  data/
+    sample/
+      procurement_sample.csv
+  scripts/
+    seed_sample_data.py
+    generate_embeddings.py
+    batch_summarize.py
+
+================================================================================
+8. DATABASE DESIGN
+================================================================================
+
+Table: procurement_records
+
+Fields:
+- id: UUID primary key
+- source_name: text
+- source_record_id: text nullable
+- content_hash: text unique
+- project_name: text not null
+- agency_name: text nullable
+- province: text nullable
+- procurement_method: text nullable
+- procurement_category: text nullable
+- budget_amount: numeric nullable
+- winning_amount: numeric nullable
+- winner_name: text nullable
+- announcement_date: date nullable
+- contract_date: date nullable
+- source_url: text nullable
+- raw_text: text nullable
+- normalized_text: text nullable
+- created_at: timestamp
+- updated_at: timestamp
+- imported_at: timestamp
+
+Indexes:
+- index on project_name
+- index on agency_name
+- index on province
+- index on announcement_date
+- index on budget_amount
+- full-text search index on project_name + agency_name + raw_text + normalized_text
+- vector index if pgvector is available
+
+Table: procurement_embeddings
+
+Fields:
+- id: UUID primary key
+- procurement_id: UUID foreign key
+- embedding_model: text
+- embedding: vector
+- embedded_text: text
+- created_at: timestamp
+
+Table: ai_summaries
+
+Fields:
+- id: UUID primary key
+- procurement_id: UUID foreign key
+- provider: text
+- model: text
+- summary_language: text
+- summary_text: text
+- prompt_version: text
+- created_at: timestamp
+
+Table: ai_extractions
+
+Fields:
+- id: UUID primary key
+- procurement_id: UUID foreign key
+- provider: text
+- model: text
+- extracted_json: jsonb
+- confidence_notes: text nullable
+- prompt_version: text
+- created_at: timestamp
+
+Table: ingestion_runs
+
+Fields:
+- id: UUID primary key
+- source_name: text
+- started_at: timestamp
+- finished_at: timestamp nullable
+- status: text
+- total_rows: integer
+- inserted_rows: integer
+- updated_rows: integer
+- skipped_rows: integer
+- failed_rows: integer
+- error_message: text nullable
+
+Table: ingestion_errors
+
+Fields:
+- id: UUID primary key
+- ingestion_run_id: UUID foreign key
+- row_number: integer nullable
+- raw_payload: jsonb
+- error_message: text
+- created_at: timestamp
+
+Optional table: ai_qa_logs
+
+Fields:
+- id: UUID primary key
+- question: text
+- answer: text
+- retrieved_record_ids: UUID[]
+- provider: text
+- model: text
+- created_at: timestamp
+
+================================================================================
+9. API DESIGN
+================================================================================
+
+Base URL:
+/api
+
+Endpoints:
+
+GET /health
+Returns service status.
+
+GET /records
+Query procurement records.
+
+Query parameters:
+- q: string optional
+- province: string optional
+- agency: string optional
+- category: string optional
+- method: string optional
+- min_budget: number optional
+- max_budget: number optional
+- date_from: date optional
+- date_to: date optional
+- sort: string optional
+- page: integer default 1
+- page_size: integer default 20
+- search_mode: keyword | semantic | hybrid
+
+Response:
+- items: list of records
+- total: integer
+- page: integer
+- page_size: integer
+
+GET /records/{id}
+Returns record detail.
+
+GET /records/{id}/similar
+Returns similar records.
+
+POST /records/{id}/summary
+Generates or returns cached AI summary.
+
+POST /search/semantic
+Body:
+- query: string
+- limit: integer
+
+POST /assistant/ask
+Body:
+- question: string
+- filters: optional object
+- limit: integer default 8
+
+Response:
+- answer: string
+- citations: list of record references
+- retrieved_records: list
+
+GET /analytics/overview
+Returns:
+- total_records
+- total_budget
+- average_budget
+- records_by_province
+- records_by_category
+- records_by_month
+- top_agencies
+- top_projects
+
+POST /ingestion/import-csv
+Development/admin only.
+Upload CSV and import records.
+
+GET /ingestion/status
+Returns latest ingestion status.
+
+GET /export/records.csv
+Exports filtered records.
+
+================================================================================
+10. FRONTEND PAGES
+================================================================================
+
+Page: Home / Landing
+Route: /
+Content:
+- Project title
+- Short explanation
+- Dataset stats
+- Search box
+- Links to dashboard, records, assistant
+- Data source and demo limitations
+
+Page: Records Search
+Route: /records
+Features:
+- Search input
+- Filter sidebar
+- Sort dropdown
+- Search mode toggle: keyword / semantic / hybrid
+- Results table/cards
+- Pagination
+- Export button
+
+Page: Record Detail
+Route: /records/[id]
+Features:
+- Procurement details
+- Budget and date display
+- Source link
+- AI summary card
+- Generate summary button
+- Similar records
+- Raw text expandable section
+- AI extraction result if available
+
+Page: Dashboard
+Route: /dashboard
+Features:
+- KPI cards
+- Budget trend
+- Records by province
+- Top agencies
+- Category/method distribution
+- Top budget projects table
+
+Page: AI Assistant
+Route: /assistant
+Features:
+- Question input
+- Optional filters
+- Answer area
+- Citations/evidence cards
+- Warning that answer is based only on retrieved records
+
+Page: About / Methodology
+Route: /about
+Content:
+- Data source explanation
+- Architecture summary
+- AI limitations
+- Cost-control design
+- Privacy note
+- Link to GitHub repo
+
+Page: Admin / Data Status
+Route: /admin or /data-status
+Can be public read-only:
+- Ingestion status
+- Record counts
+- Embedding coverage
+- Summary coverage
+- Error count
+
+================================================================================
+11. AI PROMPTS
+================================================================================
+
+Prompt: Procurement summary
+
+System:
+You are an assistant that summarizes Thai public procurement records. Use only the provided procurement text and structured fields. Do not invent facts. If information is missing, say it is not available.
+
+User:
+Summarize this procurement record in Thai in 5 bullet points.
+
+Structured fields:
+{structured_fields}
+
+Raw text:
+{raw_text}
+
+Required output:
+- Project purpose
+- Agency
+- Budget or winning amount
+- Important dates
+- Procurement method/category
+- Missing or uncertain information
+
+Prompt: Structured extraction
+
+System:
+You extract structured fields from Thai public procurement text. Return valid JSON only. Do not invent values. Use null for missing values.
+
+User:
+Extract the following fields from the text:
+- project_name
+- agency_name
+- province
+- procurement_method
+- procurement_category
+- budget_amount
+- winning_amount
+- winner_name
+- announcement_date
+- contract_date
+- source_url
+- confidence_notes
+
+Text:
+{raw_text}
+
+Return JSON only.
+
+Prompt: AI Q&A
+
+System:
+You answer questions using only the provided procurement records. If the answer is not supported by the records, say you cannot determine from the available data. Always cite record IDs or project names from the provided context.
+
+User:
+Question:
+{question}
+
+Retrieved procurement records:
+{context_records}
+
+Answer in Thai unless the question is in English.
+Include:
+1. Direct answer
+2. Evidence from records
+3. Any limitations or uncertainty
+
+================================================================================
+12. SEARCH AND RAG DESIGN
+================================================================================
+
+Record text for embedding:
+Combine these fields:
+- project_name
+- agency_name
+- province
+- procurement_method
+- procurement_category
+- budget_amount
+- announcement_date
+- raw_text or normalized_text
+- AI summary if available
+
+Embedding process:
+1. Select records without embeddings.
+2. Build embedded_text.
+3. Generate embedding using configured provider.
+4. Store in procurement_embeddings.
+5. Re-run only if text hash changes.
+
+Retrieval flow for AI assistant:
+1. Receive question and optional filters.
+2. Run hybrid search:
+   - PostgreSQL full-text search
+   - vector similarity search
+3. Merge and rank results.
+4. Select top 5-8 records.
+5. Build compact context.
+6. Ask LLM to answer using context only.
+7. Return answer and cited records.
+
+Hybrid ranking idea:
+final_score = 0.55 * keyword_score + 0.45 * vector_score
+
+Fallback:
+If vector search is unavailable, use keyword search only.
+If LLM is unavailable, show retrieved records but no generated answer.
+
+================================================================================
+13. DATA INGESTION DESIGN
+================================================================================
+
+CLI commands:
+- python -m app.jobs.import_csv --file data/sample/procurement_sample.csv --source sample
+- python -m app.jobs.fetch_source --source thai_procurement
+- python -m app.jobs.generate_embeddings --limit 1000
+- python -m app.jobs.batch_summarize --limit 100
+
+Import steps:
+1. Create ingestion_run record.
+2. Load CSV/Excel/API data.
+3. Map raw columns to canonical fields.
+4. Normalize values.
+5. Validate required fields.
+6. Generate content_hash.
+7. Upsert procurement record.
+8. Log row errors.
+9. Update ingestion_run counts.
+
+Deduplication:
+Priority:
+1. source_record_id if available
+2. content_hash from project_name + agency_name + date + budget
+3. fuzzy matching optional later
+
+================================================================================
+14. UI DESIGN GUIDELINES
+================================================================================
+
+Visual style:
+- Clean, professional, data-product style
+- Thai/English friendly typography
+- White or neutral background
+- Clear cards and tables
+- Avoid overly flashy animations
+- Use responsive layouts
+
+Important UI states:
+- Loading state
+- Empty search result
+- API error
+- AI disabled state
+- Summary generating state
+- No source URL state
+- Demo dataset warning
+
+Suggested navigation:
+- Search
+- Dashboard
+- Assistant
+- Data Status
+- About
+
+================================================================================
+15. FREE-TIER DEPLOYMENT PLAN
+================================================================================
+
+Recommended deployment:
+- Frontend: Vercel free tier
+- Backend: Render free tier or Fly.io/Railway if available
+- Database: Supabase free tier
+- Scheduled ingestion: GitHub Actions
+- Embedding batch: run locally and upload results, or run manually
+
+Environment variables:
+
+Backend:
+DATABASE_URL=
+SUPABASE_DB_URL=
+LLM_PROVIDER=gemini
+GEMINI_API_KEY=
+OPENROUTER_API_KEY=
+OPENROUTER_MODEL=
+EMBEDDING_PROVIDER=
+EMBEDDING_MODEL=
+ENABLE_LLM=true
+ENABLE_EMBEDDINGS=true
+AI_RATE_LIMIT_PER_HOUR=20
+CORS_ORIGINS=
+
+Frontend:
+NEXT_PUBLIC_API_BASE_URL=
+NEXT_PUBLIC_DEMO_MODE=true
+
+Cost-control behavior:
+- Summary button disabled after rate limit.
+- Cached summaries returned without LLM call.
+- Assistant limited to short context and low max tokens.
+- Batch generation has a limit parameter.
+- Use local embedding generation when possible.
+
+================================================================================
+16. MVP SCOPE
+================================================================================
+
+Build MVP first. Do not overbuild.
+
+MVP features:
+1. CSV/sample data ingestion.
+2. PostgreSQL schema + migrations.
+3. Records search page.
+4. Record detail page.
+5. Dashboard overview.
+6. AI summary for one record.
+7. Semantic search if pgvector is available.
+8. AI assistant with citations.
+9. Vercel + backend + DB deployment.
+10. README and demo screenshots.
+
+Out of scope for MVP:
+- User accounts
+- Complex admin permissions
+- Real-time streaming
+- Payment features
+- Browser notifications
+- Advanced anomaly detection
+- Scraping sites that prohibit scraping
+- Large-scale data warehouse
+
+================================================================================
+17. DEVELOPMENT MILESTONES
+================================================================================
+
+Milestone 1: Project setup
+- Monorepo structure
+- Docker Compose PostgreSQL with pgvector
+- FastAPI skeleton
+- Next.js skeleton
+- Health check endpoint
+
+Milestone 2: Database and ingestion
+- DB models
+- Alembic migrations
+- Sample CSV
+- Import script
+- Ingestion status
+
+Milestone 3: Search and dashboard
+- Records API
+- Search filters
+- Dashboard API
+- Frontend search page
+- Frontend dashboard
+
+Milestone 4: Detail page and AI summary
+- Detail endpoint
+- Summary table
+- LLM provider abstraction
+- Summary generation endpoint
+- UI summary card
+
+Milestone 5: Embeddings and semantic search
+- Embedding provider
+- Batch embedding script
+- Vector search endpoint
+- Similar records
+
+Milestone 6: AI assistant
+- Hybrid retrieval
+- Q&A prompt
+- Citations
+- Assistant UI
+
+Milestone 7: Deployment and polish
+- .env.example
+- README
+- Screenshots
+- Deployment guide
+- Demo mode
+- Error handling
+- Basic tests
+
+================================================================================
+18. TESTING REQUIREMENTS
+================================================================================
+
+Backend tests:
+- Test CSV import with valid data.
+- Test CSV import with invalid rows.
+- Test deduplication.
+- Test search filters.
+- Test dashboard aggregation.
+- Test summary cache behavior.
+- Test assistant response when LLM disabled.
+
+Frontend tests:
+- Search page renders results.
+- Filter controls update query.
+- Detail page shows record.
+- AI disabled state appears.
+- Empty state appears.
+
+Manual demo test:
+- Open deployed app.
+- Search for "ก่อสร้าง" or "IT".
+- Filter by province.
+- Open record detail.
+- Generate or view summary.
+- Ask assistant a question.
+- Export CSV.
+
+================================================================================
+19. README REQUIREMENTS
+================================================================================
+
+README must include:
+- Project overview
+- Live demo link
+- Screenshots
+- Architecture diagram
+- Features
+- Tech stack
+- Data source
+- AI design
+- Cost-control design
+- Local setup
+- Environment variables
+- Deployment steps
+- Known limitations
+- Future improvements
+
+Suggested README tagline:
+"AI-powered search and analytics platform for Thai public procurement open data."
+
+Suggested portfolio bullet:
+Built an end-to-end AI/data platform for Thai public procurement open data using Next.js, FastAPI, PostgreSQL/pgvector, and Gemini/OpenRouter. Implemented ingestion, normalization, hybrid search, semantic retrieval, AI summarization, dashboard analytics, and evidence-based Q&A with free-tier deployment.
+
+================================================================================
+20. FUTURE IMPROVEMENTS
+================================================================================
+
+Potential improvements after MVP:
+- Add anomaly/risk indicators, such as repeated winners or budget variance.
+- Add agency profile pages.
+- Add province-level maps.
+- Add procurement category classifier.
+- Add scheduled data refresh.
+- Add comparison between estimated budget and winning price.
+- Add multi-language support.
+- Add RAG evaluation metrics.
+- Add saved queries.
+- Add notification/watchlist.
+- Add public API endpoint for researchers.
+
+================================================================================
+21. CODEX PROMPT
+================================================================================
+
+Copy the prompt below and attach this text file when using Codex.
+
+--------------------------------------------------------------------------------
+BEGIN CODEX PROMPT
+--------------------------------------------------------------------------------
+
+You are an expert full-stack AI/data engineer. Build the project described in the attached specification file: "Thai Public Procurement Intelligence".
+
+Project goal:
+Create a portfolio-ready, free-tier-friendly, full-stack web application for Thai public procurement open data. It must demonstrate data engineering, AI engineering, RAG, semantic search, dashboard analytics, and production-minded design.
+
+Hard constraints:
+- This is a personal portfolio project. Do not use any employer/company data or proprietary logic.
+- Use public/sample procurement data only.
+- Build custom UI with Next.js and TypeScript. Do not use Streamlit, Gradio, Retool, or low-code dashboard tools.
+- Backend must use FastAPI.
+- Database must use PostgreSQL. Support pgvector where available.
+- LLM provider must be abstracted and support Gemini and OpenRouter.
+- AI features must be optional and controlled by environment variables.
+- Cache AI summaries and embeddings to minimize cost.
+- The app must run locally with Docker Compose.
+- The app should be deployable with Vercel frontend, hosted FastAPI backend, and Supabase PostgreSQL.
+- Include seed/sample data so the project works without external data source access.
+- Write clean, maintainable code with clear folder structure.
+
+Please implement in milestones:
+
+Milestone 1:
+Create monorepo structure:
+- apps/web: Next.js TypeScript frontend
+- apps/api: FastAPI backend
+- data/sample: sample procurement CSV
+- docs: architecture and deployment docs
+- docker-compose.yml
+- README.md
+- .env.example files
+
+Milestone 2:
+Implement backend:
+- FastAPI app
+- SQLAlchemy/SQLModel models
+- Alembic migrations
+- PostgreSQL connection
+- Tables:
+  - procurement_records
+  - procurement_embeddings
+  - ai_summaries
+  - ai_extractions
+  - ingestion_runs
+  - ingestion_errors
+  - ai_qa_logs optional
+- Health endpoint
+- Records search endpoint
+- Record detail endpoint
+- Analytics overview endpoint
+- Ingestion status endpoint
+
+Milestone 3:
+Implement ingestion:
+- CSV import script
+- Sample procurement CSV with at least 100 realistic but clearly sample records
+- Normalization for date, budget, province, agency, method/category
+- Deduplication by source_record_id or content_hash
+- Ingestion run tracking
+- Error logging for bad rows
+
+Milestone 4:
+Implement frontend:
+- Landing page
+- Records search page with filters and pagination
+- Record detail page
+- Dashboard page
+- Assistant page
+- Data status/about page
+- Professional responsive UI using Tailwind
+- Loading, empty, and error states
+
+Milestone 5:
+Implement AI provider abstraction:
+- Base LLM provider interface
+- Gemini provider
+- OpenRouter provider
+- Mock provider for local testing
+- Summary generation endpoint
+- Summary caching
+- Prompt templates stored in backend
+
+Milestone 6:
+Implement semantic/hybrid search:
+- Embedding provider abstraction
+- Batch embedding script
+- pgvector storage when available
+- Semantic search endpoint
+- Similar records endpoint
+- Hybrid search combining keyword and vector scores
+- Fallback to keyword search when embeddings are unavailable
+
+Milestone 7:
+Implement AI assistant:
+- Retrieve relevant procurement records using hybrid search
+- Build compact context
+- Ask LLM to answer only from context
+- Return citations/evidence records
+- If context is insufficient, say it cannot determine
+- Rate-limit or guard AI endpoint to reduce abuse
+
+Milestone 8:
+Polish for portfolio:
+- README with screenshots placeholders, architecture, setup, deployment, limitations
+- docs/architecture.md
+- docs/data-source.md
+- docs/prompts.md
+- docs/deployment.md
+- Good error messages
+- Basic tests
+- Make sure `docker-compose up` and documented commands work
+
+Implementation preferences:
+- Use Python 3.11+
+- Use Pydantic for schemas
+- Use SQLAlchemy or SQLModel
+- Use httpx for external calls
+- Use TypeScript strictly
+- Use clean reusable frontend components
+- Use environment variables for all secrets
+- Do not expose secrets to frontend
+- Include comments for non-obvious logic
+- Keep MVP focused; do not add authentication unless necessary
+
+Important behavior:
+- If no LLM API key is configured, the app must still work for search, dashboard, details, and sample data.
+- If pgvector is unavailable, the app must still work with keyword search only.
+- AI summaries must not be regenerated repeatedly.
+- The assistant must show evidence/citations from retrieved records.
+- The UI must clearly label AI-generated content.
+- The sample dataset must be labeled as sample/demo data.
+
+After implementation, provide:
+1. Commands to run locally.
+2. Commands to run ingestion and embedding generation.
+3. Environment variables needed.
+4. Deployment instructions.
+5. Any assumptions or tradeoffs made.
+
+Start by creating the repository structure and implementing the MVP end-to-end.
+
+--------------------------------------------------------------------------------
+END CODEX PROMPT
+--------------------------------------------------------------------------------
+
+================================================================================
+22. SHORT PROMPT FOR CODEX IF YOU WANT A SMALLER START
+================================================================================
+
+Build the MVP only for "Thai Public Procurement Intelligence" using the attached specification. Start with:
+- Next.js TypeScript frontend
+- FastAPI backend
+- PostgreSQL with Docker Compose
+- Sample CSV data ingestion
+- Records search/filter API
+- Dashboard API
+- Record detail page
+- AI summary endpoint using provider abstraction with Gemini/OpenRouter/mock
+- Clean README and setup docs
+
+Do not overbuild. Make sure the project runs locally first. AI and pgvector features must be optional and have graceful fallbacks.
+
+================================================================================
+END OF FILE
+================================================================================

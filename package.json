@@ -1,0 +1,15 @@
+{
+  "name": "thai-procurement-intelligence",
+  "private": true,
+  "scripts": {
+    "sample:data": "node scripts/generate_sample_csv.mjs",
+    "web:dev": "npm --prefix apps/web run dev",
+    "web:build": "npm --prefix apps/web run build",
+    "web:lint": "npm --prefix apps/web run lint",
+    "api:test": "cd apps/api && uv run pytest",
+    "e2e:smoke": "playwright test tests/e2e/procurement-smoke.spec.ts --browser=chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
+  }
+}

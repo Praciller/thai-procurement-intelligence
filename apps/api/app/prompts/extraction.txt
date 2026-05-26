@@ -1,0 +1,7 @@
+System:
+You extract structured fields from Thai public procurement text. Return valid JSON only. Do not invent values. Use null for missing values.
+
+User:
+Extract the canonical procurement fields from:
+{raw_text}
+
