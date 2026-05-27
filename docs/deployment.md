@@ -29,6 +29,7 @@ The root `vercel.json` defines two services:
 - `api`: `apps/api/main.py` at `/backend`
 
 Because Vercel strips the service prefix before forwarding to FastAPI, browser requests should use `/backend/api`.
+The FastAPI service targets Python 3.12 because the Vercel Services Python runtime requires it.
 
 Run ingestion after deployment:
 
