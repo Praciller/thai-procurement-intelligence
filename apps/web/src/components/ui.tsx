@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ProcurementRecord } from "@/types/api";
 import { formatDate, formatMoney } from "@/lib/api";
+import { normalizeLocale, withLocale } from "@/lib/i18n";
 
 export function Section({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <section className={`mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 ${className}`}>{children}</section>;
@@ -60,10 +61,11 @@ export function EmptyState({ title, body }: { title: string; body: string }) {
   );
 }
 
-export function DemoNotice() {
+export function DemoNotice({ children }: { children?: React.ReactNode }) {
   return (
     <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm leading-6">
-      This demo uses synthetic sample records with obvious sample agency and vendor names. It does not claim facts about real agencies.
+      {children ||
+        "This demo uses synthetic sample records with obvious sample agency and vendor names. It does not claim facts about real agencies."}
     </div>
   );
 }
@@ -85,9 +87,44 @@ export function BarList({ rows }: { rows: Array<{ label: string; count: number; 
   );
 }
 
-export function RecordTable({ records }: { records: ProcurementRecord[] }) {
+type RecordTableLabels = {
+  project?: string;
+  agency?: string;
+  province?: string;
+  budget?: string;
+  date?: string;
+  noRecordsTitle?: string;
+  noRecordsBody?: string;
+  uncategorized?: string;
+  notAvailable?: string;
+};
+
+const defaultRecordTableLabels = {
+  project: "Project",
+  agency: "Agency",
+  province: "Province",
+  budget: "Budget",
+  date: "Date",
+  noRecordsTitle: "No records found",
+  noRecordsBody: "Run sample ingestion or adjust the search filters.",
+  uncategorized: "Uncategorized",
+  notAvailable: "Not available",
+};
+
+export function RecordTable({
+  records,
+  labels = {},
+  locale = "en",
+}: {
+  records: ProcurementRecord[];
+  labels?: RecordTableLabels;
+  locale?: string;
+}) {
+  const text = { ...defaultRecordTableLabels, ...labels };
+  const normalizedLocale = normalizeLocale(locale);
+
   if (!records.length) {
-    return <EmptyState title="No records found" body="Run sample ingestion or adjust the search filters." />;
+    return <EmptyState title={text.noRecordsTitle} body={text.noRecordsBody} />;
   }
 
   return (
@@ -95,26 +132,26 @@ export function RecordTable({ records }: { records: ProcurementRecord[] }) {
       <table className="min-w-full border-collapse text-left text-sm">
         <thead className="bg-surface-strong text-xs uppercase tracking-wide text-muted">
           <tr>
-            <th className="px-4 py-3">Project</th>
-            <th className="px-4 py-3">Agency</th>
-            <th className="px-4 py-3">Province</th>
-            <th className="px-4 py-3">Budget</th>
-            <th className="px-4 py-3">Date</th>
+            <th className="px-4 py-3">{text.project}</th>
+            <th className="px-4 py-3">{text.agency}</th>
+            <th className="px-4 py-3">{text.province}</th>
+            <th className="px-4 py-3">{text.budget}</th>
+            <th className="px-4 py-3">{text.date}</th>
           </tr>
         </thead>
         <tbody>
           {records.map((record) => (
             <tr key={record.id} className="border-t border-border align-top hover:bg-background">
               <td className="px-4 py-3">
-                <Link href={`/records/${record.id}`} className="focus-ring rounded-sm font-medium text-accent-strong hover:underline">
+                <Link href={withLocale(`/records/${record.id}`, normalizedLocale)} className="focus-ring rounded-sm font-medium text-accent-strong hover:underline">
                   {record.project_name}
                 </Link>
-                <div className="mt-1 text-xs text-muted">{record.procurement_category || "Uncategorized"}</div>
+                <div className="mt-1 text-xs text-muted">{record.procurement_category || text.uncategorized}</div>
               </td>
-              <td className="px-4 py-3 text-muted">{record.agency_name || "Not available"}</td>
-              <td className="px-4 py-3">{record.province || "Not available"}</td>
-              <td className="px-4 py-3 font-mono text-xs">{formatMoney(record.budget_amount)}</td>
-              <td className="px-4 py-3 text-muted">{formatDate(record.announcement_date)}</td>
+              <td className="px-4 py-3 text-muted">{record.agency_name || text.notAvailable}</td>
+              <td className="px-4 py-3">{record.province || text.notAvailable}</td>
+              <td className="px-4 py-3 font-mono text-xs">{formatMoney(record.budget_amount, normalizedLocale)}</td>
+              <td className="px-4 py-3 text-muted">{formatDate(record.announcement_date, normalizedLocale)}</td>
             </tr>
           ))}
         </tbody>
@@ -122,4 +159,3 @@ export function RecordTable({ records }: { records: ProcurementRecord[] }) {
     </div>
   );
 }
-

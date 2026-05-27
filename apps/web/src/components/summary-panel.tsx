@@ -3,21 +3,24 @@
 import { useState, useTransition } from "react";
 import { Sparkles } from "lucide-react";
 import { postSummary } from "@/lib/api";
+import { getDictionary, normalizeLocale } from "@/lib/i18n";
 
-export function SummaryPanel({ recordId, initialSummary }: { recordId: string; initialSummary?: string | null }) {
+export function SummaryPanel({ recordId, initialSummary, locale = "en" }: { recordId: string; initialSummary?: string | null; locale?: string }) {
+  const normalizedLocale = normalizeLocale(locale);
+  const text = getDictionary(normalizedLocale).summary;
   const [summary, setSummary] = useState(initialSummary || "");
-  const [status, setStatus] = useState(initialSummary ? "Cached summary" : "No summary generated");
+  const [status, setStatus] = useState(initialSummary ? text.cachedSummary : text.noSummary);
   const [isPending, startTransition] = useTransition();
 
   function generate() {
     startTransition(async () => {
       try {
-        setStatus("Generating summary...");
+        setStatus(text.generating);
         const result = await postSummary(recordId);
         setSummary(result.summary_text);
-        setStatus(result.cached ? "Returned cached summary" : `Generated with ${result.provider}/${result.model}`);
+        setStatus(result.cached ? text.returnedCached : `${text.generatedWith} ${result.provider}/${result.model}`);
       } catch {
-        setStatus("AI summary unavailable. Check ENABLE_LLM or use mock provider for local demo.");
+        setStatus(text.unavailable);
       }
     });
   }
@@ -26,7 +29,7 @@ export function SummaryPanel({ recordId, initialSummary }: { recordId: string; i
     <div className="rounded-lg border border-border bg-surface p-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold">AI Summary</h2>
+          <h2 className="text-base font-semibold">{text.title}</h2>
           <p className="mt-1 text-xs text-muted">{status}</p>
         </div>
         <button
@@ -36,13 +39,12 @@ export function SummaryPanel({ recordId, initialSummary }: { recordId: string; i
           type="button"
         >
           <Sparkles size={16} />
-          {summary ? "Refresh" : "Generate"}
+          {summary ? text.refresh : text.generate}
         </button>
       </div>
       <div className="mt-4 whitespace-pre-line rounded-md bg-background p-4 text-sm leading-6 text-foreground">
-        {summary || "Generate a concise evidence-limited summary. If no LLM key is configured, the backend can use the deterministic mock provider for local testing."}
+        {summary || text.placeholder}
       </div>
     </div>
   );
 }
-

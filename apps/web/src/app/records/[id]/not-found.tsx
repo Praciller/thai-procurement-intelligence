@@ -1,10 +1,12 @@
 import { EmptyState, Section } from "@/components/ui";
+import { getDictionary } from "@/lib/i18n";
 
 export default function RecordNotFound() {
+  const dictionary = getDictionary("en");
+
   return (
     <Section>
-      <EmptyState title="Record not found" body="The API did not return this procurement record. It may not be ingested yet." />
+      <EmptyState title={dictionary.detail.notFoundTitle} body={dictionary.detail.notFoundBody} />
     </Section>
   );
 }
-

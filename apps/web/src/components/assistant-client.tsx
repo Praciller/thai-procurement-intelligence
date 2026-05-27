@@ -3,17 +3,16 @@
 import { useState, useTransition } from "react";
 import { Bot, Send } from "lucide-react";
 import { askAssistant } from "@/lib/api";
+import { getDictionary, normalizeLocale } from "@/lib/i18n";
 import type { AssistantResponse } from "@/types/api";
 import { EmptyState, RecordTable } from "@/components/ui";
 
-const exampleQuestions = [
-  "What are the highest-budget IT procurement projects?",
-  "Which agencies have many construction projects?",
-  "Summarize procurement records in Bangkok.",
-];
-
-export function AssistantClient() {
-  const [question, setQuestion] = useState(exampleQuestions[0]);
+export function AssistantClient({ locale = "en" }: { locale?: string }) {
+  const normalizedLocale = normalizeLocale(locale);
+  const dictionary = getDictionary(normalizedLocale);
+  const text = dictionary.assistantClient;
+  const tableLabels = { ...dictionary.table, ...dictionary.common };
+  const [question, setQuestion] = useState(text.examples[0]);
   const [result, setResult] = useState<AssistantResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -25,7 +24,7 @@ export function AssistantClient() {
       try {
         setResult(await askAssistant(question));
       } catch {
-        setError("Assistant request failed. Confirm API is running and sample data has been ingested.");
+        setError(text.unavailableBody);
       }
     });
   }
@@ -35,7 +34,7 @@ export function AssistantClient() {
       <section className="space-y-4">
         <form onSubmit={submit} className="rounded-lg border border-border bg-surface p-4">
           <label className="block text-sm font-medium" htmlFor="question">
-            Question
+            {text.question}
           </label>
           <textarea
             id="question"
@@ -44,42 +43,42 @@ export function AssistantClient() {
             onChange={(event) => setQuestion(event.target.value)}
           />
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs text-muted">Answers are constrained to retrieved procurement records and citations.</p>
+            <p className="text-xs text-muted">{text.guardrail}</p>
             <button
               className="focus-ring inline-flex min-h-10 items-center gap-2 rounded-md bg-accent px-4 text-sm font-medium text-background hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isPending || !question.trim()}
               type="submit"
             >
               <Send size={16} />
-              {isPending ? "Asking..." : "Ask"}
+              {isPending ? text.asking : text.ask}
             </button>
           </div>
         </form>
 
-        {error ? <EmptyState title="Assistant unavailable" body={error} /> : null}
+        {error ? <EmptyState title={text.unavailableTitle} body={error} /> : null}
         {result ? (
           <div className="rounded-lg border border-border bg-surface p-5">
             <div className="mb-3 flex items-center gap-2">
               <Bot size={18} className="text-accent-strong" />
-              <h2 className="text-base font-semibold">Answer</h2>
+              <h2 className="text-base font-semibold">{text.answer}</h2>
             </div>
-            {!result.ai_enabled ? <p className="mb-3 text-xs text-warning">LLM generation is disabled; retrieved evidence is still shown.</p> : null}
+            {!result.ai_enabled ? <p className="mb-3 text-xs text-warning">{text.disabled}</p> : null}
             <p className="whitespace-pre-line text-sm leading-6">{result.answer}</p>
           </div>
         ) : null}
 
         {result ? (
           <div>
-            <h2 className="mb-3 text-base font-semibold">Retrieved evidence</h2>
-            <RecordTable records={result.retrieved_records} />
+            <h2 className="mb-3 text-base font-semibold">{text.retrievedEvidence}</h2>
+            <RecordTable records={result.retrieved_records} labels={tableLabels} locale={normalizedLocale} />
           </div>
         ) : null}
       </section>
 
       <aside className="rounded-lg border border-border bg-surface p-4">
-        <h2 className="text-base font-semibold">Example questions</h2>
+        <h2 className="text-base font-semibold">{text.exampleQuestions}</h2>
         <div className="mt-3 space-y-2">
-          {exampleQuestions.map((item) => (
+          {text.examples.map((item: string) => (
             <button
               key={item}
               className="focus-ring w-full rounded-md border border-border bg-background p-3 text-left text-sm leading-5 hover:bg-surface-strong"
@@ -94,4 +93,3 @@ export function AssistantClient() {
     </div>
   );
 }
-
