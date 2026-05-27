@@ -13,7 +13,7 @@ class Base(DeclarativeBase):
 def _engine_args(database_url: str) -> dict:
     if database_url.startswith("sqlite"):
         return {"connect_args": {"check_same_thread": False}}
-    return {"pool_pre_ping": True}
+    return {"pool_pre_ping": True, "connect_args": {"prepare_threshold": None}}
 
 
 settings = get_settings()
