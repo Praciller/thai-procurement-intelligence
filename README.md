@@ -7,6 +7,7 @@ This is a personal portfolio project for AI Engineer and Data Engineer roles. It
 ## Features
 
 - Next.js TypeScript frontend with records search, detail pages, dashboard, assistant, data status, and methodology pages.
+- English/Thai UI switch using `?lang=en|th`, with localized navigation, page copy, record tables, metrics, and loading states.
 - FastAPI backend with health, records, analytics, ingestion, summary, assistant, semantic search, similar records, and CSV export endpoints.
 - SQLAlchemy schema for procurement records, ingestion runs/errors, AI summaries/extractions, embeddings, and Q&A logs.
 - CSV ingestion with validation, normalization, deduplication, and import counters.
@@ -26,6 +27,14 @@ flowchart LR
   API --> LLM["Gemini / OpenRouter / mock"]
   API --> Search["Keyword + semantic fallback"]
 ```
+
+## Production Demo
+
+- App: <https://thai-procurement-intelligence.vercel.app>
+- API health: <https://thai-procurement-intelligence.vercel.app/backend/api/health>
+- API readiness: <https://thai-procurement-intelligence.vercel.app/backend/api/health/readiness>
+
+The production deployment uses Vercel Services for the Next.js and FastAPI services and Supabase PostgreSQL for persistence. `NEXT_PUBLIC_SITE_URL` must point at the public Vercel alias so server-rendered pages can fetch `/backend/api` without hitting protected deployment URLs.
 
 ## Local Setup
 
@@ -113,6 +122,7 @@ Backend:
 Frontend:
 
 - `NEXT_PUBLIC_API_BASE_URL`
+- `NEXT_PUBLIC_SITE_URL`
 - `NEXT_PUBLIC_DEMO_MODE`
 
 ## AI Design
@@ -129,10 +139,13 @@ The committed sample dataset is synthetic and clearly labeled. It uses names suc
 cd apps/api
 uv run pytest
 
-cd ../web
-npm run lint
-npm run build
+cd ../..
+npm run web:test
+npm run web:lint
+npm run web:build
 ```
+
+GitHub Actions runs API tests, web unit tests, lint, and production build on every push and pull request.
 
 ## Deployment
 
@@ -143,6 +156,7 @@ Recommended:
 - Scheduled ingestion: GitHub Actions or provider scheduler
 
 See [docs/deployment.md](docs/deployment.md).
+See [docs/security.md](docs/security.md) for secret rotation and production smoke checks.
 
 ## Known Limitations
 
@@ -150,6 +164,7 @@ See [docs/deployment.md](docs/deployment.md).
 - Deterministic local embeddings are a no-cost semantic demo, not production-grade embeddings.
 - No auth or private admin surface is included.
 - Sample data is not real procurement evidence.
+- Public Thai procurement data ingestion still needs a selected official source, mapping review, and provenance policy before replacing the synthetic sample dataset.
 
 ## Portfolio Bullet
 

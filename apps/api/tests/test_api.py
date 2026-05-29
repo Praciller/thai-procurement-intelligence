@@ -45,6 +45,20 @@ def test_records_search_filters(client: TestClient, session: Session):
     assert data["items"][0]["procurement_category"] == "IT"
 
 
+def test_readiness_reports_database_and_record_count(client: TestClient, session: Session):
+    seed(session)
+
+    response = client.get("/api/health/readiness")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data == {
+        "status": "ready",
+        "database": "ok",
+        "record_count": 2,
+    }
+
+
 def test_dashboard_aggregation(client: TestClient, session: Session):
     seed(session)
 
@@ -81,4 +95,3 @@ def test_assistant_returns_evidence_when_llm_disabled(client: TestClient, sessio
     assert data["ai_enabled"] is False
     assert data["citations"]
     assert data["retrieved_records"]
-
