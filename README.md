@@ -4,6 +4,20 @@ AI-powered search and analytics platform for Thai public procurement open data.
 
 This is a personal portfolio project for AI Engineer and Data Engineer roles. It demonstrates CSV ingestion, normalization, search/filtering, analytics, optional LLM summarization, semantic-style retrieval, and evidence-based Q&A.
 
+## Portfolio Review Path
+
+Live demo: <https://thai-procurement-intelligence.vercel.app>
+
+Open these in order:
+
+1. Home: confirm English/Thai UI, 120 loaded records, budget metrics, and top projects.
+2. Search: filter records, switch keyword/semantic/hybrid modes, open a record detail.
+3. Dashboard: scan province, category, monthly, agency, and top-project aggregates.
+4. Assistant: ask a procurement question and check cited evidence.
+5. Data Status: confirm readiness, ingestion run, and record count.
+
+Reviewer note: production currently uses a synthetic demo dataset, clearly labeled in the UI. The backend already supports CSV and generic JSON source ingestion, but real Thai procurement source replacement still needs official source selection, mapping review, and provenance approval.
+
 ## Features
 
 - Next.js TypeScript frontend with records search, detail pages, dashboard, assistant, data status, and methodology pages.
@@ -33,6 +47,7 @@ flowchart LR
 - App: <https://thai-procurement-intelligence.vercel.app>
 - API health: <https://thai-procurement-intelligence.vercel.app/backend/api/health>
 - API readiness: <https://thai-procurement-intelligence.vercel.app/backend/api/health/readiness>
+- Portfolio guide: [docs/portfolio-review.md](docs/portfolio-review.md)
 
 The production deployment uses Vercel Services for the Next.js and FastAPI services and Supabase PostgreSQL for persistence. `NEXT_PUBLIC_SITE_URL` must point at the public Vercel alias so server-rendered pages can fetch `/backend/api` without hitting protected deployment URLs.
 
