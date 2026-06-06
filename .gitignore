@@ -25,3 +25,11 @@ Thumbs.db
 *.tsbuildinfo
 
 .vercel
+
+# local project briefs and agent context
+thai_public_procurement_intelligence_spec_and_codex_prompt.txt
+PRODUCT.md
+DESIGN.md
+CONTEXT.md
+apps/web/AGENTS.md
+apps/web/CLAUDE.md
