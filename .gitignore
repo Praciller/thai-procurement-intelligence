@@ -18,6 +18,11 @@ build/
 coverage/
 playwright-report/
 test-results/
+data/evidence/
+data/exports/
+data/uploads/
+*.dump
+*.sql
 
 # OS/editor
 .DS_Store

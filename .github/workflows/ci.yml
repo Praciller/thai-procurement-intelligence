@@ -20,6 +20,16 @@ jobs:
           enable-cache: true
       - run: uv sync --locked
       - run: uv run pytest
+      - run: uv run ruff check .
+
+  guardrails:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python scripts/check_repo_guardrails.py
 
   web:
     runs-on: ubuntu-latest

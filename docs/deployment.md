@@ -1,6 +1,8 @@
 # Deployment
 
-Recommended free-tier path:
+Deployment is optional. The primary review path is [local_review.md](local_review.md) and requires no hosted account, secret, or external LLM.
+
+Current optional hosted path:
 
 1. Supabase PostgreSQL for `DATABASE_URL`.
 2. Vercel Services for both `apps/web` and `apps/api`.

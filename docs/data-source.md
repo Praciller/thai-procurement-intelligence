@@ -17,7 +17,7 @@ The ingestion layer accepts CSV rows with canonical fields or common aliases:
 - `source_url`
 - `raw_text`
 
-Future public sources can be added through `app/data_sources/` without changing API routes.
+Future public sources can be added through `app/data_sources/` without changing API routes, but an adapter alone does not establish official status. Follow [data_provenance.md](data_provenance.md) and [source_mapping_policy.md](source_mapping_policy.md).
 
 ## Generic JSON Source Import
 
@@ -36,4 +36,4 @@ Before replacing the sample dataset with a real Thai procurement source, confirm
 - record identifiers are stable enough for deduplication
 - field mapping has been reviewed against real payload examples
 - `source_url` or equivalent provenance is preserved per record
-- the UI copy no longer describes records as synthetic sample data
+- source and dataset labels distinguish synthetic, sampled, and official records throughout the UI

@@ -6,9 +6,11 @@ This is a personal portfolio project for AI Engineer and Data Engineer roles. It
 
 ## Portfolio Review Path
 
-Live demo: <https://thai-procurement-intelligence.vercel.app>
+The primary review path is local, deterministic, and zero-cost. It requires no API keys, Vercel, Supabase, Gemini, OpenRouter, or official procurement data. Follow [docs/local_review.md](docs/local_review.md).
 
-Open these in order:
+The hosted demo is optional: <https://thai-procurement-intelligence.vercel.app>
+
+After local startup, open these in order:
 
 1. Home: confirm English/Thai UI, 120 loaded records, budget metrics, and top projects.
 2. Search: filter records, switch keyword/semantic/hybrid modes, open a record detail.
@@ -16,7 +18,7 @@ Open these in order:
 4. Assistant: ask a procurement question and check cited evidence.
 5. Data Status: confirm readiness, ingestion run, and record count.
 
-Reviewer note: production currently uses a synthetic demo dataset, clearly labeled in the UI. The backend already supports CSV and generic JSON source ingestion, but real Thai procurement source replacement still needs official source selection, mapping review, and provenance approval.
+Reviewer note: the committed and hosted demo records are synthetic. They demonstrate the pipeline and product behavior, not facts about real agencies, vendors, contracts, or spending. Official-source replacement remains gated by source, license, mapping, and provenance approval.
 
 ## Features
 
@@ -42,16 +44,18 @@ flowchart LR
   API --> Search["Keyword + semantic fallback"]
 ```
 
-## Production Demo
+## Optional Hosted Demo
 
 - App: <https://thai-procurement-intelligence.vercel.app>
 - API health: <https://thai-procurement-intelligence.vercel.app/backend/api/health>
 - API readiness: <https://thai-procurement-intelligence.vercel.app/backend/api/health/readiness>
 - Portfolio guide: [docs/portfolio-review.md](docs/portfolio-review.md)
 
-The production deployment uses Vercel Services for the Next.js and FastAPI services and Supabase PostgreSQL for persistence. `NEXT_PUBLIC_SITE_URL` must point at the public Vercel alias so server-rendered pages can fetch `/backend/api` without hitting protected deployment URLs.
+The current optional deployment uses Vercel Services and Supabase PostgreSQL. Neither is required for review. `NEXT_PUBLIC_SITE_URL` must point at the public Vercel alias so server-rendered pages can fetch `/backend/api` without hitting protected deployment URLs.
 
 ## Local Setup
+
+Full Windows PowerShell steps, smoke checks, expected results, and troubleshooting: [docs/local_review.md](docs/local_review.md).
 
 Prerequisites:
 
@@ -146,7 +150,9 @@ AI features are optional. If no API key is configured, search, dashboard, detail
 
 ## Data Source
 
-The committed sample dataset is synthetic and clearly labeled. It uses names such as `Sample Provincial Office A` and `Sample Vendor B` to avoid claims about real agencies.
+The committed sample dataset is synthetic and clearly labeled. It uses names such as `Sample Provincial Office A` and `Sample Vendor B` to avoid claims about real agencies. See [synthetic dataset](docs/synthetic_dataset.md), [data provenance](docs/data_provenance.md), and [source mapping policy](docs/source_mapping_policy.md).
+
+Official-source integration remains design-only: [official source adapter](docs/official_source_adapter.md). Branch normalization guidance: [repository hygiene](docs/repo_hygiene.md).
 
 ## Tests
 
@@ -162,9 +168,9 @@ npm run web:build
 
 GitHub Actions runs API tests, web unit tests, lint, and production build on every push and pull request.
 
-## Deployment
+## Optional Deployment
 
-Recommended:
+Optional hosted configuration:
 
 - Frontend and backend: one Vercel Services project
 - Database: Supabase PostgreSQL

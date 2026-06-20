@@ -1,18 +1,23 @@
 # Portfolio Review Guide
 
-This project is ready to show as a portfolio demo for AI Engineer and Data Engineer roles.
+This project is ready to review locally as a zero-cost portfolio demo for AI Engineer and Data Engineer roles.
 
 ## What To Review
 
-- Live app: <https://thai-procurement-intelligence.vercel.app>
-- API readiness: <https://thai-procurement-intelligence.vercel.app/backend/api/health/readiness>
+- Primary local flow: [local_review.md](local_review.md)
+- Optional live app: <https://thai-procurement-intelligence.vercel.app>
+- Optional hosted readiness: <https://thai-procurement-intelligence.vercel.app/backend/api/health/readiness>
 - CI workflow: `.github/workflows/ci.yml`
 - Architecture: [architecture.md](architecture.md)
 - Deployment: [deployment.md](deployment.md)
 - Data source boundary: [data-source.md](data-source.md)
+- Provenance policy: [data_provenance.md](data_provenance.md)
+- Synthetic data dictionary: [synthetic_dataset.md](synthetic_dataset.md)
 - Security checklist: [security.md](security.md)
 
-## Demo Path
+## Local Demo Path
+
+Start with [local_review.md](local_review.md). It requires no hosted services or API keys.
 
 1. Home: verify English and Thai UI, loaded metrics, and top procurement records.
 2. Search: filter by keyword, province, category, sort order, and retrieval mode.
@@ -24,8 +29,8 @@ This project is ready to show as a portfolio demo for AI Engineer and Data Engin
 ## Engineering Signals
 
 - Monorepo with Next.js frontend and FastAPI backend.
-- Supabase PostgreSQL production persistence.
-- Vercel Services deployment for frontend and API.
+- Local PostgreSQL persistence through Docker Compose.
+- Optional Vercel/Supabase deployment that is not part of the default review path.
 - English/Thai multilingual UI.
 - Server-rendered dashboard and home data.
 - Search modes: keyword, semantic-style fallback, hybrid.
@@ -43,7 +48,7 @@ This project is ready to show as a portfolio demo for AI Engineer and Data Engin
 - No private admin/auth surface is included.
 - Exposed provider keys must be rotated if they were pasted into chat or logs.
 
-## Current Production Smoke Result
+## Expected Local Evidence
 
 Expected readiness shape:
 
@@ -55,11 +60,14 @@ Expected readiness shape:
 }
 ```
 
-Run locally:
+Verify locally:
 
 ```bash
 npm run web:test
 npm run web:lint
 npm run web:build
 npm run api:test
+python scripts/check_repo_guardrails.py
 ```
+
+The hosted demo may be checked after the local flow, but it is not evidence that the repository can run without hosted dependencies.
