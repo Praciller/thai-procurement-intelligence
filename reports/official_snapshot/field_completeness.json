@@ -1,0 +1,57 @@
+{
+  "source_record_id": {
+    "present": 250,
+    "total": 250,
+    "rate": 1.0
+  },
+  "project_name": {
+    "present": 250,
+    "total": 250,
+    "rate": 1.0
+  },
+  "agency_name": {
+    "present": 250,
+    "total": 250,
+    "rate": 1.0
+  },
+  "province": {
+    "present": 250,
+    "total": 250,
+    "rate": 1.0
+  },
+  "procurement_method": {
+    "present": 250,
+    "total": 250,
+    "rate": 1.0
+  },
+  "procurement_category": {
+    "present": 250,
+    "total": 250,
+    "rate": 1.0
+  },
+  "budget_amount": {
+    "present": 250,
+    "total": 250,
+    "rate": 1.0
+  },
+  "winning_amount": {
+    "present": 250,
+    "total": 250,
+    "rate": 1.0
+  },
+  "announcement_date": {
+    "present": 250,
+    "total": 250,
+    "rate": 1.0
+  },
+  "contract_date": {
+    "present": 0,
+    "total": 250,
+    "rate": 0.0
+  },
+  "source_url": {
+    "present": 250,
+    "total": 250,
+    "rate": 1.0
+  }
+}
