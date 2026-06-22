@@ -133,6 +133,7 @@ def _find_existing(session: Session, source_name: str, normalized: dict[str, Any
             select(ProcurementRecord).where(
                 ProcurementRecord.source_name == source_name,
                 ProcurementRecord.source_record_id == source_record_id,
+                ProcurementRecord.dataset_type == normalized["dataset_type"],
             )
         )
         if existing:

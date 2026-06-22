@@ -14,8 +14,8 @@
     "record_count_after_second_run": 250
   },
   "keyword_search_latency_ms": {
-    "median": 1.598,
-    "max": 2.906,
+    "median": 1.726,
+    "max": 3.061,
     "environment": "in-memory SQLite, bounded local fixture"
   },
   "query_labels": [

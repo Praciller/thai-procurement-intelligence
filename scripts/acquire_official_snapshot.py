@@ -32,14 +32,23 @@ SAFE_FIELDS = [
 ]
 
 
+class ApprovedDomainRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        parsed = urlparse(newurl)
+        if parsed.scheme != "https" or parsed.hostname != "data.go.th":
+            raise ValueError("unapproved download domain")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def acquire(destination: Path, metadata_path: Path, limit: int, retrieved_at: str | None = None) -> dict:
-    if urlparse(DOWNLOAD_URL).hostname != "data.go.th":
+    parsed_download = urlparse(DOWNLOAD_URL)
+    if parsed_download.scheme != "https" or parsed_download.hostname != "data.go.th":
         raise ValueError("unapproved download domain")
     request = urllib.request.Request(
         DOWNLOAD_URL,
         headers={"Range": "bytes=0-1048575", "User-Agent": "thai-procurement-intelligence/1.0"},
     )
-    with urllib.request.urlopen(request, timeout=60) as response:
+    with urllib.request.build_opener(ApprovedDomainRedirectHandler()).open(request, timeout=60) as response:
         content_type = response.headers.get_content_type()
         upstream_last_modified = response.headers.get("Last-Modified")
         upstream_etag = response.headers.get("ETag")

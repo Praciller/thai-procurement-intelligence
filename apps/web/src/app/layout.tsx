@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Thai Public Procurement Intelligence",
-  description: "AI-powered search and analytics for Thai public procurement sample data.",
+  description: "Bilingual search and analytics for bounded official or deterministic synthetic Thai procurement data.",
 };
 
 export default async function RootLayout({

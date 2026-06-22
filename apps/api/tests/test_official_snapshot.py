@@ -114,6 +114,34 @@ def test_official_records_with_distinct_source_ids_do_not_collapse(session: Sess
     assert counters.inserted_rows == 2
 
 
+def test_source_identity_is_isolated_by_dataset_mode(session: Session):
+    common = {
+        "source_record_id": "SHARED-1",
+        "project_name": "Official record",
+        "agency_name": "Official agency",
+        "budget_amount": "1000",
+        "source_url": "https://data.go.th/dataset/example",
+        "source_snapshot_id": "fixture",
+        "source_license": "Creative Commons Attributions",
+        "source_checksum": "a" * 64,
+        "mapping_version": "dga-egp-v1",
+    }
+    import_rows(session, [common], "shared_source", dataset_type="official_snapshot")
+
+    import_rows(
+        session,
+        [{"source_record_id": "SHARED-1", "project_name": "Synthetic record", "agency_name": "Sample agency"}],
+        "shared_source",
+        dataset_type="synthetic",
+    )
+
+    records = session.scalars(select(ProcurementRecord).order_by(ProcurementRecord.dataset_type)).all()
+    assert [(record.dataset_type, record.project_name) for record in records] == [
+        ("official_snapshot", "Official record"),
+        ("synthetic", "Synthetic record"),
+    ]
+
+
 def test_dataset_status_exposes_active_mode_and_quality(
     client: TestClient, session: Session, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):

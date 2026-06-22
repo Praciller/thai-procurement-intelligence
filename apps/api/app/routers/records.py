@@ -95,7 +95,7 @@ def similar_records(record_id: str, session: Session = Depends(get_session)) -> 
 async def summarize_record(record_id: str, session: Session = Depends(get_session)) -> SummaryResponse:
     settings = get_settings()
     record = session.get(ProcurementRecord, record_id)
-    if not record:
+    if not record or record.dataset_type != settings.dataset_mode:
         raise HTTPException(status_code=404, detail="Record not found")
     provider = get_llm_provider(settings)
     cached = session.scalar(
@@ -152,7 +152,7 @@ def semantic_search(request: SemanticSearchRequest, session: Session = Depends(g
 @router.post("/{record_id}/embedding")
 def generate_record_embedding(record_id: str, session: Session = Depends(get_session)) -> dict[str, str]:
     record = session.get(ProcurementRecord, record_id)
-    if not record:
+    if not record or record.dataset_type != get_settings().dataset_mode:
         raise HTTPException(status_code=404, detail="Record not found")
     embedding = ensure_embedding(session, record)
     return {"id": embedding.id, "model": embedding.embedding_model}

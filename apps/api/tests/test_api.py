@@ -1,6 +1,9 @@
+import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.models import ProcurementRecord
 from app.services.embeddings import generate_missing_embeddings
 from app.services.ingestion import import_rows
 
@@ -84,6 +87,32 @@ def test_summary_is_cached(client: TestClient, session: Session):
     assert first.json()["cached"] is False
     assert second.json()["cached"] is True
     assert "Project purpose" in second.json()["summary_text"]
+
+
+@pytest.mark.parametrize("action", ["summary", "embedding"])
+def test_record_mutations_reject_inactive_dataset(client: TestClient, session: Session, action: str):
+    import_rows(
+        session,
+        [
+            {
+                "source_record_id": "OFFICIAL-1",
+                "project_name": "Official inactive record",
+                "agency_name": "Official agency",
+                "source_url": "https://data.go.th/dataset/example",
+                "source_snapshot_id": "fixture",
+                "source_license": "Creative Commons Attributions",
+                "source_checksum": "a" * 64,
+                "mapping_version": "dga-egp-v1",
+            }
+        ],
+        "dga_egp",
+        dataset_type="official_snapshot",
+    )
+    record = session.scalar(select(ProcurementRecord))
+
+    response = client.post(f"/api/records/{record.id}/{action}")
+
+    assert response.status_code == 404
 
 
 def test_assistant_returns_evidence_when_llm_disabled(client: TestClient, session: Session):
