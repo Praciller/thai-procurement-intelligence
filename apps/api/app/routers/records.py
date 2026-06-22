@@ -76,7 +76,7 @@ def list_records(
 @router.get("/{record_id}", response_model=ProcurementRecordDetail)
 def get_record(record_id: str, session: Session = Depends(get_session)) -> ProcurementRecordDetail:
     record = session.get(ProcurementRecord, record_id)
-    if not record:
+    if not record or record.dataset_type != get_settings().dataset_mode:
         raise HTTPException(status_code=404, detail="Record not found")
     return _detail_schema(record)
 
@@ -84,7 +84,7 @@ def get_record(record_id: str, session: Session = Depends(get_session)) -> Procu
 @router.get("/{record_id}/similar", response_model=list[ProcurementRecordDetail])
 def similar_records(record_id: str, session: Session = Depends(get_session)) -> list[ProcurementRecordDetail]:
     record = session.get(ProcurementRecord, record_id)
-    if not record:
+    if not record or record.dataset_type != get_settings().dataset_mode:
         raise HTTPException(status_code=404, detail="Record not found")
     query = " ".join(part or "" for part in (record.project_name, record.procurement_category, record.province))
     candidates = keyword_candidates(session, query, limit=6)

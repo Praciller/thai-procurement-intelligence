@@ -17,6 +17,14 @@ class Settings(BaseSettings):
     enable_llm: bool = Field(False, alias="ENABLE_LLM")
     enable_embeddings: bool = Field(False, alias="ENABLE_EMBEDDINGS")
     ai_rate_limit_per_hour: int = Field(20, alias="AI_RATE_LIMIT_PER_HOUR")
+    dataset_mode: Literal["synthetic", "official_snapshot"] = Field("synthetic", alias="DATASET_MODE")
+    admin_ingestion_token: str | None = Field(None, alias="ADMIN_INGESTION_TOKEN")
+    official_snapshot_metadata: str = Field(
+        "../../data/official/metadata/dga-egp-contract-2568-250.json", alias="OFFICIAL_SNAPSHOT_METADATA"
+    )
+    official_quality_report: str = Field(
+        "../../reports/official_snapshot/data_quality_summary.json", alias="OFFICIAL_QUALITY_REPORT"
+    )
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -26,4 +34,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-

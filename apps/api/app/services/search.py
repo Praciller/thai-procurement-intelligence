@@ -10,6 +10,7 @@ from sqlalchemy import Select, and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models import ProcurementEmbedding, ProcurementRecord
+from app.config import get_settings
 
 
 TOKEN_RE = re.compile(r"[\wก-๙]+", re.UNICODE)
@@ -26,7 +27,7 @@ def tokenize(text: str) -> set[str]:
 
 
 def apply_filters(stmt: Select, filters: dict[str, Any]) -> Select:
-    clauses = []
+    clauses = [ProcurementRecord.dataset_type == get_settings().dataset_mode]
     if q := filters.get("q"):
         text_fields = (
             ProcurementRecord.project_name,

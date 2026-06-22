@@ -28,6 +28,7 @@ class ProcurementRecord(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     source_name: Mapped[str] = mapped_column(String(120), default="sample", index=True)
+    dataset_type: Mapped[str] = mapped_column(String(40), default="synthetic", index=True)
     source_record_id: Mapped[str | None] = mapped_column(String(160), nullable=True, index=True)
     content_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     project_name: Mapped[str] = mapped_column(Text, nullable=False)
@@ -41,6 +42,14 @@ class ProcurementRecord(Base):
     announcement_date: Mapped[date | None] = mapped_column(Date, index=True)
     contract_date: Mapped[date | None] = mapped_column(Date)
     source_url: Mapped[str | None] = mapped_column(Text)
+    source_snapshot_id: Mapped[str | None] = mapped_column(String(160), index=True)
+    source_retrieved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    source_published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    source_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    source_license: Mapped[str | None] = mapped_column(String(160))
+    source_checksum: Mapped[str | None] = mapped_column(String(64))
+    mapping_version: Mapped[str | None] = mapped_column(String(80))
+    is_synthetic: Mapped[bool] = mapped_column(default=True)
     raw_text: Mapped[str | None] = mapped_column(Text)
     normalized_text: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
@@ -107,6 +116,8 @@ class IngestionRun(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     source_name: Mapped[str] = mapped_column(String(120), index=True)
+    snapshot_id: Mapped[str | None] = mapped_column(String(160), index=True)
+    mapping_version: Mapped[str | None] = mapped_column(String(80))
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     status: Mapped[str] = mapped_column(String(40), default="running", index=True)
@@ -115,6 +126,10 @@ class IngestionRun(Base):
     updated_rows: Mapped[int] = mapped_column(Integer, default=0)
     skipped_rows: Mapped[int] = mapped_column(Integer, default=0)
     failed_rows: Mapped[int] = mapped_column(Integer, default=0)
+    duplicate_rows: Mapped[int] = mapped_column(Integer, default=0)
+    warning_rows: Mapped[int] = mapped_column(Integer, default=0)
+    normalized_rows: Mapped[int] = mapped_column(Integer, default=0)
+    unchanged_rows: Mapped[int] = mapped_column(Integer, default=0)
     error_message: Mapped[str | None] = mapped_column(Text)
 
     errors: Mapped[list[IngestionError]] = relationship(back_populates="run", cascade="all, delete-orphan")
@@ -143,4 +158,3 @@ class AIQALog(Base):
     provider: Mapped[str] = mapped_column(String(80), default="mock")
     model: Mapped[str] = mapped_column(String(160), default="mock")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
-

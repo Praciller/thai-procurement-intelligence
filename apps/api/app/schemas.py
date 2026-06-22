@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class ProcurementRecordBase(BaseModel):
     source_name: str
+    dataset_type: Literal["synthetic", "official_snapshot"]
     source_record_id: str | None = None
     project_name: str
     agency_name: str | None = None
@@ -19,6 +20,14 @@ class ProcurementRecordBase(BaseModel):
     announcement_date: date | None = None
     contract_date: date | None = None
     source_url: str | None = None
+    source_snapshot_id: str | None = None
+    source_retrieved_at: datetime | None = None
+    source_published_at: datetime | None = None
+    source_updated_at: datetime | None = None
+    source_license: str | None = None
+    source_checksum: str | None = None
+    mapping_version: str | None = None
+    is_synthetic: bool
     raw_text: str | None = None
     normalized_text: str | None = None
 
@@ -50,6 +59,8 @@ class IngestionRunResponse(BaseModel):
 
     id: str
     source_name: str
+    snapshot_id: str | None
+    mapping_version: str | None
     started_at: datetime
     finished_at: datetime | None
     status: str
@@ -58,6 +69,10 @@ class IngestionRunResponse(BaseModel):
     updated_rows: int
     skipped_rows: int
     failed_rows: int
+    duplicate_rows: int
+    warning_rows: int
+    normalized_rows: int
+    unchanged_rows: int
     error_message: str | None
 
 
@@ -95,6 +110,16 @@ class Citation(BaseModel):
     project_name: str
     agency_name: str | None
     source_url: str | None = None
+    source_record_id: str | None = None
+    source_snapshot_id: str | None = None
+
+
+class DatasetStatus(BaseModel):
+    dataset_mode: Literal["synthetic", "official_snapshot"]
+    freshness_status: Literal["not_applicable", "unknown", "current_snapshot", "stale_snapshot"]
+    source: dict[str, Any] | None
+    quality: dict[str, Any] | None
+    latest_run: IngestionRunResponse | None
 
 
 class AssistantResponse(BaseModel):

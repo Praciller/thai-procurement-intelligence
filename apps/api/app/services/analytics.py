@@ -4,6 +4,7 @@ from sqlalchemy import extract, func, select
 from sqlalchemy.orm import Session
 
 from app.models import ProcurementRecord
+from app.config import get_settings
 from app.schemas import AnalyticsBucket, AnalyticsOverview, ProcurementRecordListItem
 
 
@@ -12,13 +13,16 @@ def _budget(value: Decimal | None) -> Decimal:
 
 
 def analytics_overview(session: Session) -> AnalyticsOverview:
-    total_records = session.scalar(select(func.count(ProcurementRecord.id))) or 0
-    total_budget = _budget(session.scalar(select(func.coalesce(func.sum(ProcurementRecord.budget_amount), 0))))
-    average_budget = _budget(session.scalar(select(func.coalesce(func.avg(ProcurementRecord.budget_amount), 0))))
+    mode = get_settings().dataset_mode
+    active = ProcurementRecord.dataset_type == mode
+    total_records = session.scalar(select(func.count(ProcurementRecord.id)).where(active)) or 0
+    total_budget = _budget(session.scalar(select(func.coalesce(func.sum(ProcurementRecord.budget_amount), 0)).where(active)))
+    average_budget = _budget(session.scalar(select(func.coalesce(func.avg(ProcurementRecord.budget_amount), 0)).where(active)))
 
     def buckets(field, limit: int = 10) -> list[AnalyticsBucket]:
         rows = session.execute(
             select(field, func.count(ProcurementRecord.id), func.coalesce(func.sum(ProcurementRecord.budget_amount), 0))
+            .where(active)
             .group_by(field)
             .order_by(func.count(ProcurementRecord.id).desc())
             .limit(limit)
@@ -30,6 +34,7 @@ def analytics_overview(session: Session) -> AnalyticsOverview:
     month_rows = session.execute(
         select(year_expr, month_expr, func.count(ProcurementRecord.id), func.coalesce(func.sum(ProcurementRecord.budget_amount), 0))
         .where(ProcurementRecord.announcement_date.is_not(None))
+        .where(active)
         .group_by(year_expr, month_expr)
         .order_by(year_expr, month_expr)
     ).all()
@@ -39,7 +44,7 @@ def analytics_overview(session: Session) -> AnalyticsOverview:
     ]
 
     top_projects = session.scalars(
-        select(ProcurementRecord).order_by(ProcurementRecord.budget_amount.desc().nullslast()).limit(8)
+        select(ProcurementRecord).where(active).order_by(ProcurementRecord.budget_amount.desc().nullslast()).limit(8)
     ).all()
 
     return AnalyticsOverview(
@@ -52,4 +57,3 @@ def analytics_overview(session: Session) -> AnalyticsOverview:
         top_agencies=buckets(ProcurementRecord.agency_name),
         top_projects=[ProcurementRecordListItem.model_validate(record) for record in top_projects],
     )
-

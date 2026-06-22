@@ -56,6 +56,7 @@ def test_readiness_reports_database_and_record_count(client: TestClient, session
         "status": "ready",
         "database": "ok",
         "record_count": 2,
+        "dataset_mode": "synthetic",
     }
 
 
@@ -95,3 +96,11 @@ def test_assistant_returns_evidence_when_llm_disabled(client: TestClient, sessio
     assert data["ai_enabled"] is False
     assert data["citations"]
     assert data["retrieved_records"]
+
+
+def test_assistant_refuses_when_no_evidence_exists(client: TestClient):
+    response = client.post("/api/assistant/ask", json={"question": "unsupported allegation", "limit": 4})
+
+    assert response.status_code == 200
+    assert response.json()["answer"] == "Cannot determine from available procurement records."
+    assert response.json()["citations"] == []
