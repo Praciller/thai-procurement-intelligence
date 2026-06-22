@@ -29,3 +29,16 @@ These are intentionally public because browser code can read any `NEXT_PUBLIC_` 
 - `NEXT_PUBLIC_SITE_URL`
 
 Never put private API keys in `NEXT_PUBLIC_` variables.
+
+## Data ingestion and export
+
+- Public ingestion is disabled unless a server-side `ADMIN_INGESTION_TOKEN` is configured and supplied.
+- Uploads accept CSV content types only, stop above 2 MB, and delete temporary files after processing.
+- Automated acquisition is hard-coded to the approved `data.go.th` HTTPS URL, uses a timeout and 1 MiB response limit, validates content type, and verifies SHA-256 before import.
+- The public API does not accept arbitrary acquisition URLs or filesystem paths.
+- CSV export prefixes cells beginning with `=`, `+`, `-`, or `@` to prevent spreadsheet formula execution.
+- React escapes displayed source text. Provider keys remain server-side.
+
+## Ethics
+
+Public records are not proof of wrongdoing. Agency or vendor names must not be ranked as suspicious without a separately validated methodology. Generated summaries require review against official records. The snapshot may be incomplete or stale, and procurement decisions require verification at the official source.

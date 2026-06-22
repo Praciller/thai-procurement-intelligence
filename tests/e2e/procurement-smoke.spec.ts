@@ -11,6 +11,7 @@ test("core procurement workflow renders and responds", async ({ page, browser })
   await page.setViewportSize({ width: 1366, height: 900 });
   await page.goto("http://127.0.0.1:3000", { waitUntil: "networkidle" });
   await expect(page).toHaveTitle(/Thai Public Procurement Intelligence/);
+  await expect(page.getByText("Synthetic Demo Dataset", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: /AI-powered search/ })).toBeVisible();
 
   await page.getByRole("link", { name: "Search", exact: true }).click();
@@ -34,4 +35,3 @@ test("core procurement workflow renders and responds", async ({ page, browser })
 
   expect(consoleIssues.filter((line) => !line.includes("Download the React DevTools"))).toEqual([]);
 });
-

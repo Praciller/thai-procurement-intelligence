@@ -5,8 +5,9 @@ import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { BarChart3, Bot, Database, FileSearch, Info, Landmark } from "lucide-react";
 import { getDictionary, languages, normalizeLocale, withLocale } from "@/lib/i18n";
+import type { DatasetStatus } from "@/types/api";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ children, dataset }: { children: React.ReactNode; dataset: DatasetStatus }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const locale = normalizeLocale(searchParams.get("lang"));
@@ -78,6 +79,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
+      <div className="border-b border-border bg-surface">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-xs sm:px-6 lg:px-8">
+          <span className="font-semibold">
+            {dataset.dataset_mode === "official_snapshot"
+              ? dictionary.common.officialDataset
+              : dictionary.common.syntheticDataset}
+          </span>
+          <span className="text-muted">
+            {dataset.dataset_mode === "official_snapshot"
+              ? dictionary.common.officialDatasetNote
+              : dictionary.common.syntheticDatasetNote}
+          </span>
+        </div>
+      </div>
       <main>{children}</main>
     </div>
   );

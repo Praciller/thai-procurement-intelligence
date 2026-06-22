@@ -1,5 +1,5 @@
 import { ArrowRight, Database, Search } from "lucide-react";
-import { getAnalytics, getRecords, formatMoney } from "@/lib/api";
+import { getAnalytics, getDatasetStatus, getRecords, formatMoney } from "@/lib/api";
 import { BarList, ButtonLink, DemoNotice, PageHeader, RecordTable, Section, Stat } from "@/components/ui";
 import { getDictionary, normalizeLocale, withLocale } from "@/lib/i18n";
 
@@ -7,7 +7,11 @@ export default async function Home({ searchParams }: { searchParams?: Promise<{ 
   const params = await searchParams;
   const locale = normalizeLocale(params?.lang);
   const dictionary = getDictionary(locale);
-  const [analytics, records] = await Promise.all([getAnalytics(), getRecords("?page_size=5&sort=budget_desc")]);
+  const [analytics, records, dataset] = await Promise.all([
+    getAnalytics(),
+    getRecords("?page_size=5&sort=budget_desc"),
+    getDatasetStatus(),
+  ]);
   const tableLabels = { ...dictionary.table, ...dictionary.common };
 
   return (
@@ -31,11 +35,19 @@ export default async function Home({ searchParams }: { searchParams?: Promise<{ 
                 </>
               }
             />
-            <DemoNotice>{dictionary.common.demoNotice}</DemoNotice>
+            <DemoNotice>
+              {dataset.dataset_mode === "official_snapshot"
+                ? dictionary.common.officialDatasetNote
+                : dictionary.common.demoNotice}
+            </DemoNotice>
           </div>
           <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
             <Stat label={dictionary.home.stats.records} value={analytics.total_records.toLocaleString(locale === "th" ? "th-TH" : "en-US")} note={dictionary.home.stats.afterIngestion} />
-            <Stat label={dictionary.home.stats.totalBudget} value={formatMoney(analytics.total_budget, locale)} note={dictionary.home.stats.sampleDataOnly} />
+            <Stat
+              label={dictionary.home.stats.totalBudget}
+              value={formatMoney(analytics.total_budget, locale)}
+              note={dataset.dataset_mode === "official_snapshot" ? dictionary.common.officialDataset : dictionary.home.stats.sampleDataOnly}
+            />
             <Stat label={dictionary.home.stats.averageBudget} value={formatMoney(analytics.average_budget, locale)} note={dictionary.home.stats.normalizedNumericField} />
           </div>
         </div>

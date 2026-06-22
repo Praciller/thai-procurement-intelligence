@@ -71,6 +71,19 @@ export function AssistantClient({ locale = "en" }: { locale?: string }) {
           <div>
             <h2 className="mb-3 text-base font-semibold">{text.retrievedEvidence}</h2>
             <RecordTable records={result.retrieved_records} labels={tableLabels} locale={normalizedLocale} />
+            <ul className="mt-3 space-y-2 text-sm">
+              {result.citations.map((citation) => (
+                <li key={citation.id} className="rounded-md border border-border bg-surface p-3">
+                  <span className="font-medium">{citation.project_name}</span>
+                  {citation.source_record_id ? <span className="ml-2 font-mono text-xs text-muted">{citation.source_record_id}</span> : null}
+                  {citation.source_url ? (
+                    <a className="focus-ring ml-2 text-accent-strong hover:underline" href={citation.source_url} rel="noreferrer" target="_blank">
+                      {text.officialSource}
+                    </a>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
           </div>
         ) : null}
       </section>

@@ -9,7 +9,7 @@ const dictionaries = {
   en: {
     shell: {
       product: "Thai Procurement Intelligence",
-      subtitle: "Sample public-data AI platform",
+      subtitle: "Bilingual public-data evidence platform",
       languageLabel: "Language",
       nav: {
         home: "Home",
@@ -28,6 +28,10 @@ const dictionaries = {
       unknownAgency: "Unknown agency",
       unknownProvince: "Unknown province",
       source: "Source",
+      syntheticDataset: "Synthetic Demo Dataset",
+      officialDataset: "Official Snapshot Dataset",
+      syntheticDatasetNote: "Clearly labeled synthetic records; not official data.",
+      officialDatasetNote: "Bounded attributed snapshot; not complete or real-time.",
     },
     table: {
       project: "Project",
@@ -53,13 +57,13 @@ const dictionaries = {
         normalizedNumericField: "Normalized numeric field",
       },
       recordsByProvince: "Records by province",
-      topProjects: "Highest budget sample projects",
+      topProjects: "Highest budget projects",
       noProvinceData: "Province distribution appears after records are loaded.",
     },
     recordsPage: {
       title: "Procurement Search",
       description:
-        "Search sample procurement records by keyword, province, category, budget order, and search mode. Semantic and hybrid modes degrade to deterministic local retrieval when vector infrastructure is not configured.",
+        "Search the active procurement dataset by keyword, province, category, budget order, and search mode. Semantic and hybrid modes degrade to deterministic local retrieval when vector infrastructure is not configured.",
     },
     recordsClient: {
       keyword: "Keyword",
@@ -113,8 +117,9 @@ const dictionaries = {
       unavailableTitle: "Assistant unavailable",
       unavailableBody: "Assistant request failed. Confirm API is running and sample data has been ingested.",
       answer: "Answer",
-      disabled: "LLM generation is disabled; retrieved evidence is still shown.",
+      disabled: "External LLM generation is disabled; a deterministic evidence answer is shown.",
       retrievedEvidence: "Retrieved evidence",
+      officialSource: "Official source",
       exampleQuestions: "Example questions",
       examples: [
         "What are the highest-budget IT procurement projects?",
@@ -124,7 +129,7 @@ const dictionaries = {
     },
     dataStatus: {
       title: "Data Status",
-      description: "Read-only operational view for ingestion runs, record counts, sample source status, and demo readiness.",
+      description: "Read-only operational view for the active dataset, provenance, quality evidence, and ingestion runs.",
       records: "Records",
       ingestionRuns: "Ingestion runs",
       latestStatus: "Latest status",
@@ -137,6 +142,19 @@ const dictionaries = {
       updated: "Updated",
       failed: "Failed",
       finished: "Finished",
+      datasetMode: "Dataset mode",
+      snapshot: "Snapshot ID",
+      retrieved: "Retrieved",
+      coverage: "Coverage",
+      valid: "Valid records",
+      rejected: "Rejected records",
+      duplicates: "Duplicates",
+      freshness: "Freshness",
+      checksum: "Checksum",
+      verified: "Verified",
+      mappingVersion: "Mapping version",
+      currentSnapshot: "Current bounded snapshot",
+      staleSnapshot: "Stale bounded snapshot",
       emptyTitle: "No ingestion runs yet",
       emptyBody: "Run the sample import command to populate the database and display import counters.",
     },
@@ -147,7 +165,7 @@ const dictionaries = {
         {
           title: "Data source strategy",
           body:
-            "The MVP ships with synthetic but realistic sample procurement records and a CSV ingestion interface. Public CSV, Excel, and API adapters are isolated behind data-source interfaces so real open data can replace the sample source.",
+            "Synthetic mode remains the deterministic default. Official mode uses a separately ingested, checksummed 250-record DGA/data.go.th snapshot with record-level attribution; the two modes are never aggregated.",
         },
         {
           title: "AI design",
@@ -162,7 +180,12 @@ const dictionaries = {
         {
           title: "Privacy boundary",
           body:
-            "Only public or sample procurement records are designed to be sent to AI providers. No employer, company, or confidential data is required or included.",
+            "The bounded official snapshot excludes supplier names and legal identifiers. Public data is not proof of wrongdoing, and this project does not rank agencies or vendors as suspicious.",
+        },
+        {
+          title: "Bounded evidence",
+          body:
+            "The snapshot is used to demonstrate acquisition, mapping, quality checks, provenance, retrieval, and citations. It is incomplete, may become stale, and does not represent the entire Thai procurement system.",
         },
       ],
     },
@@ -183,6 +206,13 @@ const dictionaries = {
       contractDate: "Contract date",
       imported: "Imported",
       updated: "Updated",
+      sourceName: "Source name",
+      sourceRecordId: "Source record ID",
+      snapshotId: "Snapshot ID",
+      retrieved: "Retrieved",
+      published: "Published",
+      license: "License / attribution",
+      mappingVersion: "Mapping version",
       notFoundTitle: "Record not found",
       notFoundBody: "The API did not return this procurement record. It may not be ingested yet.",
     },
@@ -203,7 +233,7 @@ const dictionaries = {
   th: {
     shell: {
       product: "Thai Procurement Intelligence",
-      subtitle: "แพลตฟอร์ม AI จากข้อมูลสาธารณะตัวอย่าง",
+      subtitle: "แพลตฟอร์มหลักฐานข้อมูลสาธารณะสองภาษา",
       languageLabel: "ภาษา",
       nav: {
         home: "หน้าแรก",
@@ -222,6 +252,10 @@ const dictionaries = {
       unknownAgency: "ไม่ทราบหน่วยงาน",
       unknownProvince: "ไม่ทราบจังหวัด",
       source: "แหล่งข้อมูล",
+      syntheticDataset: "ชุดข้อมูลสาธิตสังเคราะห์",
+      officialDataset: "ชุดข้อมูลภาพรวมจากแหล่งทางการ",
+      syntheticDatasetNote: "ระเบียนสังเคราะห์ที่ติดป้ายชัดเจน ไม่ใช่ข้อมูลทางการ",
+      officialDatasetNote: "ภาพรวมข้อมูลขนาดจำกัดพร้อมที่มา ไม่ใช่ข้อมูลครบถ้วนหรือเรียลไทม์",
     },
     table: {
       project: "โครงการ",
@@ -247,13 +281,13 @@ const dictionaries = {
         normalizedNumericField: "ฟิลด์ตัวเลขที่ทำมาตรฐานแล้ว",
       },
       recordsByProvince: "ระเบียนตามจังหวัด",
-      topProjects: "โครงการตัวอย่างงบประมาณสูงสุด",
+      topProjects: "โครงการงบประมาณสูงสุด",
       noProvinceData: "การกระจายตามจังหวัดจะแสดงหลังโหลดระเบียน",
     },
     recordsPage: {
       title: "ค้นหาระเบียนจัดซื้อจัดจ้าง",
       description:
-        "ค้นหาระเบียนตัวอย่างด้วยคำค้น จังหวัด หมวดหมู่ ลำดับงบประมาณ และโหมดค้นหา โหมด semantic และ hybrid จะถอยกลับเป็นการค้นหาแบบกำหนดได้เมื่อยังไม่ได้ตั้งค่าเวกเตอร์",
+        "ค้นหาชุดข้อมูลจัดซื้อจัดจ้างที่ใช้งานอยู่ด้วยคำค้น จังหวัด หมวดหมู่ ลำดับงบประมาณ และโหมดค้นหา โหมด semantic และ hybrid จะถอยกลับเป็นการค้นหาแบบกำหนดได้เมื่อยังไม่ได้ตั้งค่าเวกเตอร์",
     },
     recordsClient: {
       keyword: "คำค้น",
@@ -307,8 +341,9 @@ const dictionaries = {
       unavailableTitle: "ผู้ช่วยไม่พร้อมใช้งาน",
       unavailableBody: "คำขอผู้ช่วยล้มเหลว โปรดยืนยันว่า API ทำงานและนำเข้าข้อมูลตัวอย่างแล้ว",
       answer: "คำตอบ",
-      disabled: "ปิดการสร้างคำตอบด้วย LLM อยู่ แต่ยังแสดงหลักฐานที่ค้นคืนได้",
+      disabled: "ปิดการสร้างคำตอบด้วย LLM ภายนอก และแสดงคำตอบหลักฐานแบบกำหนดผลได้",
       retrievedEvidence: "หลักฐานที่ค้นคืนได้",
+      officialSource: "แหล่งข้อมูลทางการ",
       exampleQuestions: "ตัวอย่างคำถาม",
       examples: [
         "โครงการจัดซื้อ IT ที่มีงบประมาณสูงสุดคืออะไร?",
@@ -318,7 +353,7 @@ const dictionaries = {
     },
     dataStatus: {
       title: "สถานะข้อมูล",
-      description: "มุมมองปฏิบัติการแบบอ่านอย่างเดียวสำหรับรอบนำเข้า จำนวนระเบียน สถานะแหล่งข้อมูลตัวอย่าง และความพร้อมของเดโม",
+      description: "มุมมองปฏิบัติการแบบอ่านอย่างเดียวสำหรับชุดข้อมูลที่ใช้งาน ที่มา หลักฐานคุณภาพ และรอบนำเข้า",
       records: "ระเบียน",
       ingestionRuns: "รอบนำเข้า",
       latestStatus: "สถานะล่าสุด",
@@ -331,6 +366,19 @@ const dictionaries = {
       updated: "อัปเดต",
       failed: "ล้มเหลว",
       finished: "เสร็จสิ้น",
+      datasetMode: "โหมดชุดข้อมูล",
+      snapshot: "รหัสภาพรวมข้อมูล",
+      retrieved: "วันที่ดึงข้อมูล",
+      coverage: "ช่วงข้อมูล",
+      valid: "ระเบียนที่ผ่าน",
+      rejected: "ระเบียนที่ปฏิเสธ",
+      duplicates: "ระเบียนซ้ำ",
+      freshness: "ความสดใหม่",
+      checksum: "เช็กซัม",
+      verified: "ตรวจสอบแล้ว",
+      mappingVersion: "เวอร์ชันการแมป",
+      currentSnapshot: "ภาพรวมข้อมูลขนาดจำกัดที่ยังใหม่",
+      staleSnapshot: "ภาพรวมข้อมูลขนาดจำกัดที่ล้าสมัย",
       emptyTitle: "ยังไม่มีรอบนำเข้า",
       emptyBody: "รันคำสั่งนำเข้าตัวอย่างเพื่อเติมฐานข้อมูลและแสดงตัวนับการนำเข้า",
     },
@@ -341,7 +389,7 @@ const dictionaries = {
         {
           title: "กลยุทธ์แหล่งข้อมูล",
           body:
-            "MVP มาพร้อมระเบียนจัดซื้อจัดจ้างตัวอย่างที่สมจริงและอินเทอร์เฟซนำเข้า CSV อะแดปเตอร์สำหรับ CSV, Excel และ API สาธารณะถูกแยกไว้หลังอินเทอร์เฟซแหล่งข้อมูลเพื่อให้แทนที่ด้วยข้อมูลเปิดจริงได้",
+            "โหมดสังเคราะห์ยังเป็นค่าเริ่มต้นแบบกำหนดผลได้ โหมดทางการใช้ภาพรวมข้อมูล 250 ระเบียนจาก DGA/data.go.th ที่แยกนำเข้า ตรวจเช็กซัม และระบุที่มารายระเบียน โดยไม่รวมข้อมูลสองโหมดเข้าด้วยกัน",
         },
         {
           title: "การออกแบบ AI",
@@ -356,7 +404,12 @@ const dictionaries = {
         {
           title: "ขอบเขตความเป็นส่วนตัว",
           body:
-            "ออกแบบให้ส่งเฉพาะข้อมูลจัดซื้อจัดจ้างสาธารณะหรือตัวอย่างไปยังผู้ให้บริการ AI ไม่ต้องใช้หรือรวมข้อมูลนายจ้าง บริษัท หรือข้อมูลลับ",
+            "ภาพรวมข้อมูลทางการไม่รวมชื่อผู้ขายและเลขระบุนิติบุคคล ข้อมูลสาธารณะไม่ใช่หลักฐานการกระทำผิด และโครงการนี้ไม่จัดอันดับหน่วยงานหรือผู้ขายว่าน่าสงสัย",
+        },
+        {
+          title: "หลักฐานแบบจำกัดขอบเขต",
+          body:
+            "ภาพรวมนี้ใช้สาธิตการได้มา การแมป การตรวจคุณภาพ ที่มา การค้นคืน และการอ้างอิง ข้อมูลไม่ครบถ้วน อาจล้าสมัย และไม่เป็นตัวแทนระบบจัดซื้อจัดจ้างไทยทั้งหมด",
         },
       ],
     },
@@ -377,6 +430,13 @@ const dictionaries = {
       contractDate: "วันที่สัญญา",
       imported: "นำเข้า",
       updated: "อัปเดต",
+      sourceName: "ชื่อแหล่งข้อมูล",
+      sourceRecordId: "รหัสระเบียนต้นทาง",
+      snapshotId: "รหัสภาพรวมข้อมูล",
+      retrieved: "วันที่ดึงข้อมูล",
+      published: "วันที่เผยแพร่",
+      license: "สัญญาอนุญาต / การระบุที่มา",
+      mappingVersion: "เวอร์ชันการแมป",
       notFoundTitle: "ไม่พบระเบียน",
       notFoundBody: "API ไม่ส่งคืนระเบียนนี้ อาจยังไม่ถูกนำเข้า",
     },

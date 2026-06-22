@@ -17,6 +17,12 @@ test("returns Thai copy when requested", () => {
   assert.equal(dictionary.home.stats.records, "ระเบียน");
 });
 
+test("exposes bilingual official and synthetic dataset labels", () => {
+  assert.equal(getDictionary("en").common.officialDataset, "Official Snapshot Dataset");
+  assert.equal(getDictionary("th").common.syntheticDataset, "ชุดข้อมูลสาธิตสังเคราะห์");
+  assert.equal(getDictionary("th").assistantClient.officialSource, "แหล่งข้อมูลทางการ");
+});
+
 test("adds or replaces the lang query parameter", () => {
   assert.equal(withLocale("/records", "th"), "/records?lang=th");
   assert.equal(withLocale("/records?page_size=20", "th"), "/records?page_size=20&lang=th");

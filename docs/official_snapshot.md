@@ -1,9 +1,13 @@
 # Official bounded snapshot
 
-Snapshot ID: `dga-egp-contract-2568-250`  
-Retrieved: 2026-06-21T14:02:45.343910Z  
-Coverage: 2024-10-04 through 2025-09-29  
-Records: 250  
+Snapshot ID: `dga-egp-contract-2568-250`
+
+Retrieved: 2026-06-21T14:02:45.343910Z
+
+Coverage: 2024-10-04 through 2025-09-29
+
+Records: 250
+
 SHA-256: `413f70c0ef17c17233b99aa42a7f1e25284644948c37bd109c21e9cc0678618b`
 
 The snapshot is the first 250 unique project IDs from resource part 10 of DGA's fiscal-year 2568 EGP contract dataset. It is a deterministic portfolio fixture, not a complete or representative sample of Thai procurement.
