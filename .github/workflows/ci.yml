@@ -11,22 +11,26 @@ jobs:
       run:
         working-directory: apps/api
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: true
       - run: uv sync --locked
       - run: uv run pytest
       - run: uv run ruff check .
+      - run: uv run alembic upgrade head
+        env:
+          DATABASE_URL: sqlite:///./migration_check.db
+      - run: uv run python -m app.jobs.evaluate_official_snapshot
 
   guardrails:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - run: python scripts/check_repo_guardrails.py
@@ -34,8 +38,8 @@ jobs:
   web:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm

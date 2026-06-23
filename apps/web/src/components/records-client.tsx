@@ -7,8 +7,8 @@ import { getDictionary, normalizeLocale } from "@/lib/i18n";
 import type { ProcurementRecord, RecordsResponse } from "@/types/api";
 import { EmptyState, RecordTable } from "@/components/ui";
 
-const provinces = ["", "Bangkok", "Chiang Mai", "Phuket", "Khon Kaen", "Chonburi", "Songkhla"];
-const categories = ["", "IT", "Construction", "Medical Supplies", "Education", "Utilities", "Transport", "Office Equipment"];
+const syntheticProvinces = ["Bangkok", "Chiang Mai", "Phuket", "Khon Kaen", "Chonburi", "Songkhla"];
+const syntheticCategories = ["IT", "Construction", "Medical Supplies", "Education", "Utilities", "Transport", "Office Equipment"];
 const modes = ["keyword", "semantic", "hybrid"] as const;
 
 type Mode = (typeof modes)[number];
@@ -17,6 +17,23 @@ export function RecordsClient({ initialRecords, locale = "en" }: { initialRecord
   const normalizedLocale = normalizeLocale(locale);
   const dictionary = getDictionary(normalizedLocale);
   const text = dictionary.recordsClient;
+  const official = initialRecords.items.some((record) => !record.is_synthetic);
+  const provinces = [
+    "",
+    ...new Set(
+      official
+        ? initialRecords.items.map((record) => record.province).filter((value): value is string => Boolean(value))
+        : syntheticProvinces,
+    ),
+  ];
+  const categories = [
+    "",
+    ...new Set(
+      official
+        ? initialRecords.items.map((record) => record.procurement_category).filter((value): value is string => Boolean(value))
+        : syntheticCategories,
+    ),
+  ];
   const tableLabels = { ...dictionary.table, ...dictionary.common };
   const [q, setQ] = useState("");
   const [province, setProvince] = useState("");

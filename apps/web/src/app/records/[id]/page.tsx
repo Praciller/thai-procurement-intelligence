@@ -56,6 +56,14 @@ export default async function RecordDetailPage({
           </div>
         </div>
         <aside className="rounded-lg border border-border bg-surface p-5">
+          <div className="mb-5 rounded-md border border-border bg-background p-3 text-sm">
+            <div className="font-semibold">
+              {record.is_synthetic ? dictionary.common.syntheticDataset : dictionary.common.officialDataset}
+            </div>
+            <div className="mt-1 text-xs text-muted">
+              {record.is_synthetic ? dictionary.common.syntheticDatasetNote : dictionary.common.officialDatasetNote}
+            </div>
+          </div>
           <h2 className="text-base font-semibold">{dictionary.detail.normalizedFields}</h2>
           <dl className="mt-4 space-y-3 text-sm">
             {[
@@ -67,6 +75,13 @@ export default async function RecordDetailPage({
               [dictionary.detail.contractDate, formatDate(record.contract_date, locale)],
               [dictionary.detail.imported, formatDate(record.imported_at, locale)],
               [dictionary.detail.updated, formatDate(record.updated_at, locale)],
+              [dictionary.detail.sourceName, record.source_name],
+              [dictionary.detail.sourceRecordId, record.source_record_id],
+              [dictionary.detail.snapshotId, record.source_snapshot_id],
+              [dictionary.detail.retrieved, formatDate(record.source_retrieved_at, locale)],
+              [dictionary.detail.published, formatDate(record.source_published_at, locale)],
+              [dictionary.detail.license, record.source_license],
+              [dictionary.detail.mappingVersion, record.mapping_version],
             ].map(([label, value]) => (
               <div key={label}>
                 <dt className="text-xs uppercase tracking-wide text-muted">{label}</dt>

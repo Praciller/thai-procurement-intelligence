@@ -1,12 +1,12 @@
 # Thai Public Procurement Intelligence
 
-AI-powered search and analytics platform for Thai public procurement open data.
+Evidence-based search and analytics for a bounded Thai public procurement snapshot, with a separate deterministic synthetic demo.
 
 This is a personal portfolio project for AI Engineer and Data Engineer roles. It demonstrates CSV ingestion, normalization, search/filtering, analytics, optional LLM summarization, semantic-style retrieval, and evidence-based Q&A.
 
 ## Portfolio Review Path
 
-The primary review path is local, deterministic, and zero-cost. It requires no API keys, Vercel, Supabase, Gemini, OpenRouter, or official procurement data. Follow [docs/local_review.md](docs/local_review.md).
+The primary review path is local, deterministic, and zero-cost. It requires no API keys, Vercel, Supabase, Gemini, or OpenRouter. Follow [docs/local_review.md](docs/local_review.md).
 
 The hosted demo is optional: <https://thai-procurement-intelligence.vercel.app>
 
@@ -18,7 +18,17 @@ After local startup, open these in order:
 4. Assistant: ask a procurement question and check cited evidence.
 5. Data Status: confirm readiness, ingestion run, and record count.
 
-Reviewer note: the committed and hosted demo records are synthetic. They demonstrate the pipeline and product behavior, not facts about real agencies, vendors, contracts, or spending. Official-source replacement remains gated by source, license, mapping, and provenance approval.
+Dataset warning: `synthetic` remains the default and the optional hosted demo has not been migrated in this change. Local `official_snapshot` mode uses a separately ingested 250-record DGA/data.go.th snapshot retrieved on 2026-06-21. The modes are never aggregated, and the snapshot is not complete, representative, or real-time.
+
+## Screenshots
+
+![Official snapshot home](docs/screenshots/official-home.png)
+
+![Official record provenance](docs/screenshots/official-record-provenance.png)
+
+![Official data quality status](docs/screenshots/official-data-status.png)
+
+The complete evidence set includes search, dashboard, assistant citations, methodology, and Thai mobile views under [`docs/screenshots/`](docs/screenshots/).
 
 ## Features
 
@@ -28,6 +38,8 @@ Reviewer note: the committed and hosted demo records are synthetic. They demonst
 - SQLAlchemy schema for procurement records, ingestion runs/errors, AI summaries/extractions, embeddings, and Q&A logs.
 - CSV ingestion with validation, normalization, deduplication, and import counters.
 - 120 synthetic sample records in `data/sample/procurement_sample.csv`.
+- Approved 250-record official bounded snapshot with checksum, mapping, quality reports, record-level provenance, and idempotent import.
+- Visible bilingual dataset identity, source attribution, freshness, and data-quality status.
 - Optional LLM provider abstraction for Gemini, OpenRouter, and deterministic local mock.
 - Local deterministic embeddings for free semantic/hybrid retrieval demos.
 - Docker Compose with PostgreSQL/pgvector, API, and web services.
@@ -88,6 +100,7 @@ Run API:
 ```bash
 cd apps/api
 $env:DATABASE_URL="postgresql+psycopg://postgres:postgres@localhost:5432/thai_procurement"
+uv run alembic upgrade head
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
@@ -137,6 +150,10 @@ Backend:
 - `ENABLE_EMBEDDINGS`
 - `AI_RATE_LIMIT_PER_HOUR`
 - `CORS_ORIGINS`
+- `DATASET_MODE=synthetic|official_snapshot`
+- `ADMIN_INGESTION_TOKEN`
+- `OFFICIAL_SNAPSHOT_METADATA`
+- `OFFICIAL_QUALITY_REPORT`
 
 Frontend:
 
@@ -148,11 +165,33 @@ Frontend:
 
 AI features are optional. If no API key is configured, search, dashboard, details, export, ingestion, and evidence retrieval still work. Summaries are cached in `ai_summaries`; assistant answers cite retrieved records.
 
-## Data Source
+## Official bounded snapshot
 
-The committed sample dataset is synthetic and clearly labeled. It uses names such as `Sample Provincial Office A` and `Sample Vendor B` to avoid claims about real agencies. See [synthetic dataset](docs/synthetic_dataset.md), [data provenance](docs/data_provenance.md), and [source mapping policy](docs/source_mapping_policy.md).
+- Publisher: Digital Government Development Agency (Public Organization), with source-data cooperation stated by the portal.
+- Dataset: [fiscal-year 2568 EGP contract data](https://data.go.th/dataset/3beb7813-3607-4e5f-a094-b3b574a6e358).
+- Retrieved: 2026-06-21T14:02:45.343910Z.
+- Coverage in this subset: 2024-10-04 through 2025-09-29.
+- Records: 250 unique source project IDs.
+- License label: `Creative Commons Attributions` (the portal does not supply a version or URL).
+- SHA-256: `413f70c0ef17c17233b99aa42a7f1e25284644948c37bd109c21e9cc0678618b`.
 
-Official-source integration remains design-only: [official source adapter](docs/official_source_adapter.md). Branch normalization guidance: [repository hygiene](docs/repo_hygiene.md).
+Source governance, mapping, acquisition, and limitations: [source review](docs/official_source_review.md), [mapping](docs/official_source_mapping.md), [snapshot](docs/official_snapshot.md), [provenance](docs/data_provenance.md), and [limitations](docs/limitations.md).
+
+## Measured evidence
+
+The deterministic evaluation on 2026-06-22 measured 250/250 valid rows, zero rejected/duplicate/warning rows, an idempotent second import with 250 unchanged rows, keyword precision@5 of 1.0, hybrid precision@5 of 0.5, citation/source-link completeness of 1.0, and unsupported-claim rate of 0.0 across four labeled queries. These are bounded-fixture results, not production-scale claims. See [quality](reports/official_snapshot/data_quality_summary.md) and [evaluation](reports/official_snapshot/evaluation.md).
+
+## Official snapshot local mode
+
+```powershell
+cd apps/api
+$env:DATASET_MODE="official_snapshot"
+uv run alembic upgrade head
+uv run python -m app.jobs.import_official_snapshot --file ../../data/official/raw/dga-egp-contract-2568-250.csv --metadata ../../data/official/metadata/dga-egp-contract-2568-250.json
+uv run uvicorn app.main:app --reload --port 8000
+```
+
+Synthetic mode remains `DATASET_MODE=synthetic`; use a separate database when switching modes for the clearest local review.
 
 ## Tests
 
@@ -183,10 +222,12 @@ See [docs/security.md](docs/security.md) for secret rotation and production smok
 
 - Excel ingestion is an extension point, not implemented in MVP.
 - Deterministic local embeddings are a no-cost semantic demo, not production-grade embeddings.
-- No auth or private admin surface is included.
-- Sample data is not real procurement evidence.
-- Public Thai procurement data ingestion still needs a selected official source, mapping review, and provenance policy before replacing the synthetic sample dataset.
+- The official fixture is a small non-random subset from one source resource part.
+- The portal's attribution license label does not specify a version.
+- Public ingestion is disabled unless a server-side admin token is explicitly configured.
+- The hosted deployment remains synthetic until separately migrated and verified.
+- Public data is not proof of fraud, corruption, misconduct, or suspicious behavior.
 
 ## Portfolio Bullet
 
-Built an end-to-end AI/data platform for Thai public procurement open data using Next.js, FastAPI, SQLAlchemy, PostgreSQL-compatible persistence, and Gemini/OpenRouter provider abstractions. Implemented ingestion, normalization, search, semantic-style retrieval, dashboard analytics, AI summarization, and evidence-based Q&A with free-tier deployment constraints.
+Built a zero-cost Next.js/FastAPI procurement intelligence case study with a checksummed 250-record official DGA snapshot, versioned mapping, provenance-aware PostgreSQL ingestion, deterministic quality/retrieval evaluation, bilingual evidence UI, and source-cited assistant responses while preserving an isolated synthetic demo.

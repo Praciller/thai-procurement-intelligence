@@ -1,0 +1,26 @@
+{
+  "snapshot_id": "dga-egp-contract-2568-250",
+  "source_name": "Thailand Government Spending EGP contract export FY2568",
+  "source_organization": "Digital Government Development Agency (Public Organization), sourced with Comptroller General's Department cooperation",
+  "source_url": "https://data.go.th/dataset/3beb7813-3607-4e5f-a094-b3b574a6e358",
+  "download_url": "https://data.go.th/dataset/3beb7813-3607-4e5f-a094-b3b574a6e358/resource/35961821-d945-4fc0-8ce1-a96b4cd46bd6/download/2568-egp-contract-10.csv",
+  "retrieved_at": "2026-06-21T14:02:45.343910Z",
+  "coverage_start": "2024-10-04",
+  "coverage_end": "2025-09-29",
+  "license": "Creative Commons Attributions",
+  "license_url": null,
+  "sha256": "413f70c0ef17c17233b99aa42a7f1e25284644948c37bd109c21e9cc0678618b",
+  "content_type": "text/csv",
+  "record_count_raw": 250,
+  "redistribution_status": "permitted",
+  "mapping_version": "dga-egp-v1",
+  "source_updated_at": "2026-05-11T04:59:38.290911Z",
+  "notes": [
+    "Bounded first-250 unique-project subset from resource part 10; not representative of all Thai procurement.",
+    "Vendor names and legal/tax identifiers were excluded because they are unnecessary for this case study.",
+    "Columns after province were excluded because upstream rows do not consistently preserve empty columns, causing positional shifts.",
+    "Upstream Last-Modified: Mon, 11 May 2026 04:59:39 GMT",
+    "Upstream ETag: \"1778475579.7943795-168019099-1817907856\"",
+    "Observed upstream date labels: 1 ก.ค. 68 through 9 มิ.ย. 68 (Thai display format; lexical range only)."
+  ]
+}

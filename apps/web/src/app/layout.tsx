@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
+import { getDatasetStatus } from "@/lib/api";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,14 +17,15 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Thai Public Procurement Intelligence",
-  description: "AI-powered search and analytics for Thai public procurement sample data.",
+  description: "Bilingual search and analytics for bounded official or deterministic synthetic Thai procurement data.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const dataset = await getDatasetStatus();
   return (
     <html
       lang="en"
@@ -31,7 +33,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <Suspense fallback={<main>{children}</main>}>
-          <AppShell>{children}</AppShell>
+          <AppShell dataset={dataset}>{children}</AppShell>
         </Suspense>
       </body>
     </html>

@@ -66,6 +66,27 @@ def parse_date(value: Any) -> date | None:
     if not text or text.lower() in {"nan", "none", "null", "-"}:
         return None
 
+    thai_months = {
+        "ม.ค.": 1,
+        "ก.พ.": 2,
+        "มี.ค.": 3,
+        "เม.ย.": 4,
+        "พ.ค.": 5,
+        "มิ.ย.": 6,
+        "ก.ค.": 7,
+        "ส.ค.": 8,
+        "ก.ย.": 9,
+        "ต.ค.": 10,
+        "พ.ย.": 11,
+        "ธ.ค.": 12,
+    }
+    match = re.fullmatch(r"(\d{1,2})\s+([^\s]+)\s+(\d{2,4})", text)
+    if match and match.group(2) in thai_months:
+        year = int(match.group(3))
+        year = year + 2500 if year < 100 else year
+        year = year - 543 if year > 2400 else year
+        return date(year, thai_months[match.group(2)], int(match.group(1)))
+
     for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%Y/%m/%d", "%d-%m-%Y"):
         try:
             parsed = datetime.strptime(text, fmt).date()
@@ -94,11 +115,17 @@ def normalized_record_text(record: dict[str, Any]) -> str:
 def content_hash(record: dict[str, Any]) -> str:
     identity = "|".join(
         str(record.get(key) or "").casefold()
-        for key in ("project_name", "agency_name", "announcement_date", "budget_amount")
+        for key in (
+            "dataset_type",
+            "source_record_id",
+            "project_name",
+            "agency_name",
+            "announcement_date",
+            "budget_amount",
+        )
     )
     return hashlib.sha256(identity.encode("utf-8")).hexdigest()
 
 
 def text_hash(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
-

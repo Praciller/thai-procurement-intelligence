@@ -19,6 +19,10 @@ Backend environment:
 - `ENABLE_EMBEDDINGS`
 - `AI_RATE_LIMIT_PER_HOUR`
 - `CORS_ORIGINS`
+- `DATASET_MODE=synthetic|official_snapshot`
+- `ADMIN_INGESTION_TOKEN` (leave unset to disable public ingestion)
+- `OFFICIAL_SNAPSHOT_METADATA`
+- `OFFICIAL_QUALITY_REPORT`
 
 Frontend environment:
 
@@ -55,3 +59,14 @@ cd apps/api
 uv run python -m app.jobs.import_csv --file ../../data/sample/procurement_sample.csv --source sample
 uv run python -m app.jobs.generate_embeddings --limit 1000
 ```
+
+Production remains in synthetic mode unless the migration, official import, environment mode, dataset banner, source links, readiness, search, assistant citations, and data-status page are all verified. This change does not authorize or perform a production deployment.
+
+The API container applies Alembic migrations before starting. Databases created by an older release may contain the `0001` tables without an `alembic_version` row. Verify that the schema matches the original baseline, then perform the one-time safe baseline and upgrade:
+
+```bash
+uv run alembic stamp 0001_initial
+uv run alembic upgrade head
+```
+
+Do not stamp a database whose baseline schema has not been inspected.

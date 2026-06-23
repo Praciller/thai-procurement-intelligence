@@ -6,15 +6,25 @@ from fastapi.responses import Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.database import get_session
 from app.models import ProcurementRecord
 
 router = APIRouter(prefix="/export", tags=["export"])
 
 
+def _csv_safe(value):
+    text = "" if value is None else str(value)
+    return f"'{text}" if text.startswith(("=", "+", "-", "@")) else value
+
+
 @router.get("/records.csv")
 def export_records(session: Session = Depends(get_session)) -> Response:
-    rows = session.scalars(select(ProcurementRecord).order_by(ProcurementRecord.announcement_date.desc())).all()
+    rows = session.scalars(
+        select(ProcurementRecord)
+        .where(ProcurementRecord.dataset_type == get_settings().dataset_mode)
+        .order_by(ProcurementRecord.announcement_date.desc())
+    ).all()
     output = StringIO()
     writer = csv.writer(output)
     writer.writerow(
@@ -32,7 +42,9 @@ def export_records(session: Session = Depends(get_session)) -> Response:
     )
     for record in rows:
         writer.writerow(
-            [
+            map(
+                _csv_safe,
+                [
                 record.id,
                 record.project_name,
                 record.agency_name,
@@ -42,11 +54,11 @@ def export_records(session: Session = Depends(get_session)) -> Response:
                 record.budget_amount,
                 record.announcement_date,
                 record.source_url,
-            ]
+                ],
+            )
         )
     return Response(
         output.getvalue(),
         media_type="text/csv",
         headers={"Content-Disposition": 'attachment; filename="procurement_records.csv"'},
     )
-

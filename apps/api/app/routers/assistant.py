@@ -50,7 +50,14 @@ async def ask(request: AssistantRequest, session: Session = Depends(get_session)
         answer=answer,
         ai_enabled=ai_enabled,
         citations=[
-            Citation(id=record.id, project_name=record.project_name, agency_name=record.agency_name, source_url=record.source_url)
+            Citation(
+                id=record.id,
+                project_name=record.project_name,
+                agency_name=record.agency_name,
+                source_url=record.source_url,
+                source_record_id=record.source_record_id,
+                source_snapshot_id=record.source_snapshot_id,
+            )
             for record in records
         ],
         retrieved_records=[ProcurementRecordListItem.model_validate(record) for record in records],

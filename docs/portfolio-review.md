@@ -12,6 +12,8 @@ This project is ready to review locally as a zero-cost portfolio demo for AI Eng
 - Deployment: [deployment.md](deployment.md)
 - Data source boundary: [data-source.md](data-source.md)
 - Provenance policy: [data_provenance.md](data_provenance.md)
+- Official source approval: [official_source_review.md](official_source_review.md)
+- Official mapping and measured quality: [official_source_mapping.md](official_source_mapping.md), [data_quality.md](data_quality.md)
 - Synthetic data dictionary: [synthetic_dataset.md](synthetic_dataset.md)
 - Security checklist: [security.md](security.md)
 
@@ -37,15 +39,18 @@ Start with [local_review.md](local_review.md). It requires no hosted services or
 - LLM provider abstraction: mock, Gemini, OpenRouter.
 - Evidence-limited assistant responses with citations.
 - Ingestion run/error tracking.
+- Checksummed 250-record official snapshot with idempotent import and record-level provenance.
+- Bilingual dataset identity, freshness, source links, and quality evidence.
 - CI on every push and pull request.
 - Tests cover API flows, ingestion behavior, DB connection config, API URL resolution, and locale links.
 
 ## Honest Boundaries
 
-- Dataset is synthetic demo data, not real procurement evidence.
-- Real Thai public procurement ingestion needs final official source selection and mapping review.
+- The hosted demo remains synthetic until separately migrated and verified.
+- The local official mode is a bounded non-random snapshot, not complete or representative evidence.
 - Local deterministic embeddings are a no-cost semantic demo, not production-grade vector embeddings.
-- No private admin/auth surface is included.
+- Public ingestion is disabled by default and requires a server-side token.
+- Public data is not proof of wrongdoing.
 - Exposed provider keys must be rotated if they were pasted into chat or logs.
 
 ## Expected Local Evidence

@@ -2,6 +2,8 @@
 
 This is the primary portfolio review path. It uses the committed synthetic CSV, local PostgreSQL, deterministic embeddings, and the mock LLM provider. No hosted service or API key is required.
 
+The optional official-snapshot path is also local and key-free. Dataset modes are isolated and must be imported and run separately.
+
 ## Prerequisites
 
 - Docker Desktop
@@ -37,6 +39,7 @@ $env:LLM_PROVIDER="mock"
 $env:ENABLE_LLM="false"
 $env:ENABLE_EMBEDDINGS="true"
 cd apps/api
+uv run alembic upgrade head
 uv run python -m app.jobs.import_csv --file ../../data/sample/procurement_sample.csv --source sample
 uv run python -m app.jobs.generate_embeddings --limit 1000
 ```
@@ -66,6 +69,19 @@ npm run dev
 ```
 
 Open Home, Search, Dashboard, Assistant, Data Status, and Methodology at <http://localhost:3000>. Verify the synthetic-data notice remains visible and Assistant returns cited records without an API key.
+
+## Official snapshot mode
+
+After `uv run alembic upgrade head`:
+
+```powershell
+cd apps/api
+$env:DATASET_MODE="official_snapshot"
+uv run python -m app.jobs.import_official_snapshot --file ../../data/official/raw/dga-egp-contract-2568-250.csv --metadata ../../data/official/metadata/dga-egp-contract-2568-250.json
+uv run uvicorn app.main:app --reload --port 8000
+```
+
+Start the existing web command and verify the Official Snapshot Dataset banner, 250 active records, record provenance/source link, data-quality counters, and assistant citations. Rerun the import and confirm zero inserted and 250 unchanged rows.
 
 ## API Smoke Checks
 

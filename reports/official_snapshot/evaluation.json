@@ -1,0 +1,28 @@
+{
+  "snapshot_id": "dga-egp-contract-2568-250",
+  "query_count": 4,
+  "keyword_precision_at_5": 1.0,
+  "hybrid_precision_at_5": 0.5,
+  "citation_completeness": 1.0,
+  "source_link_completeness": 1.0,
+  "unsupported_claim_rate": 0.0,
+  "dataset_mode_isolation": true,
+  "idempotency": {
+    "first_inserted": 250,
+    "second_inserted": 0,
+    "second_unchanged": 250,
+    "record_count_after_second_run": 250
+  },
+  "keyword_search_latency_ms": {
+    "median": 1.726,
+    "max": 3.061,
+    "environment": "in-memory SQLite, bounded local fixture"
+  },
+  "query_labels": [
+    "คอมพิวเตอร์",
+    "น้ำมันเบรก",
+    "วัสดุก่อสร้าง",
+    "ซ่อมบำรุงรถยนต์"
+  ],
+  "scope_note": "Bounded fixture evaluation; not production-scale or system-wide evidence."
+}

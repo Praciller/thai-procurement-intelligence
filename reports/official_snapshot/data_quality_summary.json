@@ -1,0 +1,18 @@
+{
+  "snapshot_id": "dga-egp-contract-2568-250",
+  "checksum_verified": true,
+  "raw_records": 250,
+  "valid_records": 250,
+  "rejected_records": 0,
+  "duplicate_records": 0,
+  "warning_records": 0,
+  "ingestion_success_rate": 1.0,
+  "rejection_rate": 0.0,
+  "duplicate_rate": 0.0,
+  "coverage_start": "2024-10-04",
+  "coverage_end": "2025-09-29",
+  "mapping_version": "dga-egp-v1",
+  "limitations": [
+    "First 250 unique projects from one source resource part; all rows in this subset use specific-selection procurement."
+  ]
+}

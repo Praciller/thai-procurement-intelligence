@@ -2,7 +2,12 @@
 
 ## Current Status
 
-All committed demo records are synthetic. The application may ingest user-supplied CSV or JSON, but that capability does not make a source official or approved.
+The project supports two isolated modes:
+
+- `synthetic`: the default 120-record deterministic demo.
+- `official_snapshot`: a 250-record bounded DGA/data.go.th snapshot retrieved on 2026-06-21.
+
+Official records retain source record ID, dataset URL, snapshot ID, retrieval/source update timestamps, license, snapshot checksum, mapping version, and `is_synthetic=false`. Search, analytics, export, details, and assistant retrieval filter by the active mode.
 
 ## Approval Gate for Official Data
 
@@ -20,4 +25,4 @@ Before any dataset is described as official, every item below must be reviewed a
 
 Records must be labeled as `synthetic`, `sampled`, or `official`; these labels are not interchangeable. A sample from an official source must still disclose sampling and cannot represent source-wide statistics.
 
-Raw source files, database dumps, generated exports, and evidence reports remain local unless their license, privacy, size, and purpose are explicitly approved.
+The approved snapshot and its evidence reports are committed under the restrictions in [official_source_review.md](official_source_review.md). Database dumps and other source files remain local unless separately approved.

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import init_db
-from app.routers import analytics, assistant, export, health, ingestion, records
+from app.routers import analytics, assistant, dataset, export, health, ingestion, records
 
 settings = get_settings()
 
@@ -30,10 +30,10 @@ def startup() -> None:
 
 
 app.include_router(health.router, prefix="/api")
+app.include_router(dataset.router, prefix="/api")
 app.include_router(records.router, prefix="/api")
 app.include_router(records.semantic_router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
 app.include_router(ingestion.router, prefix="/api")
 app.include_router(assistant.router, prefix="/api")
 app.include_router(export.router, prefix="/api")
-

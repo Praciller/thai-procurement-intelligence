@@ -1,6 +1,7 @@
 import type {
   AnalyticsOverview,
   AssistantResponse,
+  DatasetStatus,
   IngestionRun,
   ProcurementRecord,
   RecordsResponse,
@@ -95,6 +96,14 @@ export function getAnalytics() {
 
 export function getIngestionRuns() {
   return safeApiFetch<IngestionRun[]>("/ingestion/status", [], { cache: "no-store" });
+}
+
+export function getDatasetStatus() {
+  return safeApiFetch<DatasetStatus>(
+    "/dataset/status",
+    { dataset_mode: "synthetic", freshness_status: "not_applicable", source: null, quality: null, latest_run: null },
+    { cache: "no-store" },
+  );
 }
 
 export function postSummary(id: string) {
