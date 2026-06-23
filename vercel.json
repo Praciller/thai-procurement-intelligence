@@ -1,10 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "functions": {
-    "apps/api/main.py": {
-      "includeFiles": "{data/official/metadata/dga-egp-contract-2568-250.json,reports/official_snapshot/data_quality_summary.json}"
-    }
-  },
   "experimentalServices": {
     "web": {
       "entrypoint": "apps/web",
@@ -13,6 +8,10 @@
     "api": {
       "entrypoint": "apps/api/main.py",
       "routePrefix": "/backend",
+      "includeFiles": [
+        "data/official/metadata/dga-egp-contract-2568-250.json",
+        "reports/official_snapshot/data_quality_summary.json"
+      ],
       "maxDuration": 30
     }
   }
