@@ -201,6 +201,44 @@ def test_dataset_status_resolves_bundled_evidence_outside_process_directory(
     get_settings.cache_clear()
 
 
+def test_dataset_status_falls_back_to_imported_official_records(
+    client: TestClient, session: Session, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    monkeypatch.setenv("DATASET_MODE", "official_snapshot")
+    monkeypatch.setenv("OFFICIAL_SNAPSHOT_METADATA", str(tmp_path / "missing-metadata.json"))
+    monkeypatch.setenv("OFFICIAL_QUALITY_REPORT", str(tmp_path / "missing-quality.json"))
+    get_settings.cache_clear()
+    import_rows(
+        session,
+        [
+            {
+                "source_record_id": "EGP-1",
+                "project_name": "Official record",
+                "agency_name": "Official agency",
+                "budget_amount": "1000",
+                "source_url": "https://data.go.th/dataset/example",
+                "source_snapshot_id": "fixture",
+                "source_license": "Creative Commons Attribution",
+                "source_checksum": "a" * 64,
+                "mapping_version": "dga-egp-v1",
+                "source_retrieved_at": "2026-06-21T00:00:00Z",
+                "announcement_date": "2024-11-29",
+            }
+        ],
+        "dga_egp",
+        dataset_type="official_snapshot",
+    )
+
+    response = client.get("/api/dataset/status")
+
+    assert response.status_code == 200
+    assert response.json()["source"]["snapshot_id"] == "fixture"
+    assert response.json()["source"]["record_count_raw"] == 1
+    assert response.json()["quality"]["checksum_verified"] is True
+    assert response.json()["quality"]["valid_records"] == 1
+    get_settings.cache_clear()
+
+
 def test_public_ingestion_requires_admin_token(client: TestClient):
     response = client.post("/api/ingestion/import-csv", files={"file": ("records.csv", b"project_name\nunsafe")})
 
