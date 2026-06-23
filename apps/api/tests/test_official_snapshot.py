@@ -184,6 +184,23 @@ def test_dataset_status_exposes_active_mode_and_quality(
     get_settings.cache_clear()
 
 
+def test_dataset_status_resolves_bundled_evidence_outside_process_directory(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("DATASET_MODE", "official_snapshot")
+    monkeypatch.setenv("OFFICIAL_SNAPSHOT_METADATA", "data/official/metadata/dga-egp-contract-2568-250.json")
+    monkeypatch.setenv("OFFICIAL_QUALITY_REPORT", "reports/official_snapshot/data_quality_summary.json")
+    get_settings.cache_clear()
+
+    response = client.get("/api/dataset/status")
+
+    assert response.status_code == 200
+    assert response.json()["source"]["snapshot_id"] == "dga-egp-contract-2568-250"
+    assert response.json()["quality"]["checksum_verified"] is True
+    get_settings.cache_clear()
+
+
 def test_public_ingestion_requires_admin_token(client: TestClient):
     response = client.post("/api/ingestion/import-csv", files={"file": ("records.csv", b"project_name\nunsafe")})
 

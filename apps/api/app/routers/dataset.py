@@ -15,7 +15,9 @@ router = APIRouter(prefix="/dataset", tags=["dataset"])
 
 def _read_if_present(path: str) -> dict | None:
     target = Path(path)
-    return read_json(target) if target.is_file() else None
+    candidates = [target] if target.is_absolute() else [target, *(parent / target for parent in Path(__file__).resolve().parents)]
+    match = next((candidate for candidate in candidates if candidate.is_file()), None)
+    return read_json(match) if match else None
 
 
 @router.get("/status", response_model=DatasetStatus)
