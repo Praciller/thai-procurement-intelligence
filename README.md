@@ -42,15 +42,15 @@ The complete evidence set includes search, dashboard, assistant citations, metho
 - Visible bilingual dataset identity, source attribution, freshness, and data-quality status.
 - Optional LLM provider abstraction for Gemini, OpenRouter, and deterministic local mock.
 - Local deterministic embeddings for free semantic/hybrid retrieval demos.
-- Docker Compose with PostgreSQL/pgvector, API, and web services.
+- Docker Compose with PostgreSQL JSON vector storage, API, and web services; similarity runs in application code.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
   CSV["CSV / Public source"] --> Import["FastAPI ingestion"]
-  Import --> DB[("PostgreSQL / pgvector")]
-  DB --> API["FastAPI REST API"]
+  Import --> DB[("PostgreSQL JSON vector storage")]
+  DB --> API["FastAPI REST API with application-side similarity"]
   API --> Web["Next.js frontend"]
   API --> LLM["Gemini / OpenRouter / mock"]
   API --> Search["Keyword + semantic fallback"]
