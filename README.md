@@ -2,23 +2,23 @@
 
 Evidence-based search and analytics for a bounded Thai public procurement snapshot, with a separate deterministic synthetic demo.
 
-This is a personal portfolio project for AI Engineer and Data Engineer roles. It demonstrates CSV ingestion, normalization, search/filtering, analytics, optional LLM summarization, semantic-style retrieval, and evidence-based Q&A.
+This portfolio project demonstrates CSV ingestion, normalization, search/filtering, analytics, deterministic evidence summaries, semantic-style retrieval, and source-cited Q&A.
 
-## Portfolio Review Path
+## Portfolio review path
 
-The primary review path is local, deterministic, and zero-cost. It requires no API keys, Vercel, Supabase, Gemini, or OpenRouter. Follow [docs/local_review.md](docs/local_review.md).
+The primary review path is local, deterministic, and zero-cost. It requires no inference account or API key. Follow [docs/local_review.md](docs/local_review.md).
 
-The hosted demo is optional: <https://thai-procurement-intelligence.vercel.app>
+Hosted demo: <https://thai-procurement-intelligence.vercel.app>
 
-After local startup, open these in order:
+After local startup, review these areas:
 
-1. Home: confirm English/Thai UI, 120 loaded records, budget metrics, and top projects.
-2. Search: filter records, switch keyword/semantic/hybrid modes, open a record detail.
-3. Dashboard: scan province, category, monthly, agency, and top-project aggregates.
-4. Assistant: ask a procurement question and check cited evidence.
-5. Data Status: confirm readiness, ingestion run, and record count.
+1. Home: confirm English/Thai UI, loaded records, budget metrics, and top projects.
+2. Search: filter records, switch keyword/semantic/hybrid modes, and open record details.
+3. Dashboard: inspect province, category, monthly, agency, and top-project aggregates.
+4. Assistant: ask a procurement question and verify cited evidence.
+5. Data Status: confirm readiness, ingestion state, source identity, and record count.
 
-Dataset warning: `synthetic` remains the default and the optional hosted demo has not been migrated in this change. Local `official_snapshot` mode uses a separately ingested 250-record DGA/data.go.th snapshot retrieved on 2026-06-21. The modes are never aggregated, and the snapshot is not complete, representative, or real-time.
+Dataset boundary: `synthetic` remains the default demo mode. Local `official_snapshot` mode uses a separately ingested 250-record DGA/data.go.th snapshot retrieved on 2026-06-21. The modes are never aggregated, and the snapshot is not complete, representative, or real-time.
 
 ## Screenshots
 
@@ -28,44 +28,36 @@ Dataset warning: `synthetic` remains the default and the optional hosted demo ha
 
 ![Official data quality status](docs/screenshots/official-data-status.png)
 
-The complete evidence set includes search, dashboard, assistant citations, methodology, and Thai mobile views under [`docs/screenshots/`](docs/screenshots/).
+Additional search, dashboard, assistant-citation, methodology, and Thai mobile evidence is under [`docs/screenshots/`](docs/screenshots/).
 
 ## Features
 
-- Next.js TypeScript frontend with records search, detail pages, dashboard, assistant, data status, and methodology pages.
-- English/Thai UI switch using `?lang=en|th`, with localized navigation, page copy, record tables, metrics, and loading states.
-- FastAPI backend with health, records, analytics, ingestion, summary, assistant, semantic search, similar records, and CSV export endpoints.
-- SQLAlchemy schema for procurement records, ingestion runs/errors, AI summaries/extractions, embeddings, and Q&A logs.
+- Next.js TypeScript frontend with search, record detail, dashboard, assistant, data status, and methodology views.
+- English/Thai UI switch using `?lang=en|th`.
+- FastAPI backend with health, records, analytics, ingestion, summary, assistant, semantic search, similar-record, and CSV-export endpoints.
+- SQLAlchemy schema for procurement records, ingestion runs/errors, summaries, embeddings, and Q&A logs.
 - CSV ingestion with validation, normalization, deduplication, and import counters.
-- 120 synthetic sample records in `data/sample/procurement_sample.csv`.
-- Approved 250-record official bounded snapshot with checksum, mapping, quality reports, record-level provenance, and idempotent import.
+- 120 deterministic synthetic records in `data/sample/procurement_sample.csv`.
+- Approved 250-record bounded public snapshot with checksum, mapping, quality reports, record-level provenance, and idempotent import.
 - Visible bilingual dataset identity, source attribution, freshness, and data-quality status.
-- Optional LLM provider abstraction for Gemini, OpenRouter, and deterministic local mock.
-- Local deterministic embeddings for free semantic/hybrid retrieval demos.
+- Deterministic evidence summaries and cited answers that require no network inference.
+- Local deterministic embeddings for semantic/hybrid retrieval demos.
 - Docker Compose with PostgreSQL JSON vector storage, API, and web services; similarity runs in application code.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  CSV["CSV / Public source"] --> Import["FastAPI ingestion"]
+  CSV["CSV / public source"] --> Import["FastAPI ingestion"]
   Import --> DB[("PostgreSQL JSON vector storage")]
-  DB --> API["FastAPI REST API with application-side similarity"]
+  DB --> API["FastAPI REST API"]
   API --> Web["Next.js frontend"]
-  API --> LLM["Gemini / OpenRouter / mock"]
-  API --> Search["Keyword + semantic fallback"]
+  API --> Answer["Deterministic evidence summaries"]
+  API --> Search["Keyword + semantic retrieval"]
+  Answer --> Evidence["Citations and retrieved records"]
 ```
 
-## Optional Hosted Demo
-
-- App: <https://thai-procurement-intelligence.vercel.app>
-- API health: <https://thai-procurement-intelligence.vercel.app/backend/api/health>
-- API readiness: <https://thai-procurement-intelligence.vercel.app/backend/api/health/readiness>
-- Portfolio guide: [docs/portfolio-review.md](docs/portfolio-review.md)
-
-The current optional deployment uses Vercel Services and Supabase PostgreSQL. Neither is required for review. `NEXT_PUBLIC_SITE_URL` must point at the public Vercel alias so server-rendered pages can fetch `/backend/api` without hitting protected deployment URLs.
-
-## Local Setup
+## Local setup
 
 Full Windows PowerShell steps, smoke checks, expected results, and troubleshooting: [docs/local_review.md](docs/local_review.md).
 
@@ -73,38 +65,34 @@ Prerequisites:
 
 - Node.js 24+
 - `uv`
-- Docker Desktop for PostgreSQL path
+- Docker Desktop for the PostgreSQL path
 
-Install frontend deps:
+Frontend:
 
 ```bash
 cd apps/web
 npm install
+npm run dev
 ```
 
-Install backend deps:
+Backend:
 
 ```bash
 cd apps/api
 uv sync
 ```
 
-Run PostgreSQL:
+Run PostgreSQL and API:
 
 ```bash
 docker compose up db
-```
-
-Run API:
-
-```bash
 cd apps/api
 $env:DATABASE_URL="postgresql+psycopg://postgres:postgres@localhost:5432/thai_procurement"
 uv run alembic upgrade head
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
-Seed sample records:
+Seed deterministic sample records:
 
 ```bash
 cd apps/api
@@ -112,7 +100,7 @@ uv run python -m app.jobs.import_csv --file ../../data/sample/procurement_sample
 uv run python -m app.jobs.generate_embeddings --limit 1000
 ```
 
-Run frontend:
+Frontend API configuration:
 
 ```bash
 cd apps/web
@@ -120,7 +108,7 @@ $env:NEXT_PUBLIC_API_BASE_URL="http://localhost:8000/api"
 npm run dev
 ```
 
-Open:
+Local endpoints:
 
 - Web app: <http://localhost:3000>
 - API docs: <http://localhost:8000/api/docs>
@@ -137,18 +125,12 @@ Then seed data:
 docker compose exec api uv run python -m app.jobs.import_csv --file /data/sample/procurement_sample.csv --source sample
 ```
 
-## Environment Variables
+## Environment variables
 
 Backend:
 
 - `DATABASE_URL`
-- `LLM_PROVIDER=mock|gemini|openrouter`
-- `GEMINI_API_KEY`
-- `OPENROUTER_API_KEY`
-- `OPENROUTER_MODEL`
-- `ENABLE_LLM`
 - `ENABLE_EMBEDDINGS`
-- `AI_RATE_LIMIT_PER_HOUR`
 - `CORS_ORIGINS`
 - `DATASET_MODE=synthetic|official_snapshot`
 - `ADMIN_INGESTION_TOKEN`
@@ -161,9 +143,9 @@ Frontend:
 - `NEXT_PUBLIC_SITE_URL`
 - `NEXT_PUBLIC_DEMO_MODE`
 
-## AI Design
+## Deterministic answer design
 
-AI features are optional. If no API key is configured, search, dashboard, details, export, ingestion, and evidence retrieval still work. Summaries are cached in `ai_summaries`; assistant answers cite retrieved records.
+Search, dashboard, details, export, ingestion, summaries, and evidence retrieval all work without external inference. Summary output is cached in `ai_summaries`; assistant answers are generated from retrieved records and return citations alongside the answer. The public answer path is designed for reproducible portfolio review rather than unconstrained generation.
 
 ## Official bounded snapshot
 
@@ -205,22 +187,15 @@ npm run web:lint
 npm run web:build
 ```
 
-GitHub Actions runs API tests, web unit tests, lint, and production build on every push and pull request.
+GitHub Actions runs API tests, migration checks, official-snapshot evaluation, repository guardrails, web tests, lint, and production build on every push and pull request.
 
-## Optional Deployment
+## Optional deployment
 
-Optional hosted configuration:
+The hosted deployment is optional. The local review path remains the canonical zero-key path. See [docs/deployment.md](docs/deployment.md) and [docs/security.md](docs/security.md).
 
-- Frontend and backend: one Vercel Services project
-- Database: Supabase PostgreSQL
-- Scheduled ingestion: GitHub Actions or provider scheduler
+## Known limitations
 
-See [docs/deployment.md](docs/deployment.md).
-See [docs/security.md](docs/security.md) for secret rotation and production smoke checks.
-
-## Known Limitations
-
-- Excel ingestion is an extension point, not implemented in MVP.
+- Excel ingestion is an extension point, not implemented in the MVP.
 - Deterministic local embeddings are a no-cost semantic demo, not production-grade embeddings.
 - The official fixture is a small non-random subset from one source resource part.
 - The portal's attribution license label does not specify a version.
@@ -228,6 +203,6 @@ See [docs/security.md](docs/security.md) for secret rotation and production smok
 - The hosted deployment remains synthetic until separately migrated and verified.
 - Public data is not proof of fraud, corruption, misconduct, or suspicious behavior.
 
-## Portfolio Bullet
+## Portfolio bullet
 
-Built a zero-cost Next.js/FastAPI procurement intelligence case study with a checksummed 250-record official DGA snapshot, versioned mapping, provenance-aware PostgreSQL ingestion, deterministic quality/retrieval evaluation, bilingual evidence UI, and source-cited assistant responses while preserving an isolated synthetic demo.
+Built a zero-cost Next.js/FastAPI procurement intelligence case study with a checksummed 250-record official DGA snapshot, versioned mapping, provenance-aware PostgreSQL ingestion, deterministic quality/retrieval evaluation, bilingual evidence UI, and source-cited answers while preserving an isolated synthetic demo.
