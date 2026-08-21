@@ -8,7 +8,6 @@ from app.models import AISummary, ProcurementRecord
 from app.schemas import ProcurementRecordDetail, RecordsResponse, SearchMode, SemanticSearchRequest, SummaryResponse
 from app.services.embeddings import ensure_embedding, hash_embedding
 from app.services.llm.factory import get_llm_provider
-from app.services.rate_limit import check_hourly_ai_limit
 from app.services.search import hybrid_candidates, keyword_candidates, search_records, semantic_candidates
 
 router = APIRouter(prefix="/records", tags=["records"])
@@ -113,10 +112,6 @@ async def summarize_record(record_id: str, session: Session = Depends(get_sessio
             summary_text=cached.summary_text,
             cached=True,
         )
-    if not settings.enable_llm and settings.llm_provider != "mock":
-        raise HTTPException(status_code=503, detail="LLM is disabled")
-    if settings.enable_llm and not check_hourly_ai_limit(settings.ai_rate_limit_per_hour, bucket="summary"):
-        raise HTTPException(status_code=429, detail="AI summary rate limit exceeded")
     summary_text = await provider.generate_summary(record)
     summary = AISummary(
         procurement_id=record.id,
