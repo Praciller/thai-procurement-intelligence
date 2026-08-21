@@ -32,7 +32,7 @@ Thumbs.db
 .vercel
 
 # local project briefs and agent context
-thai_public_procurement_intelligence_spec_and_codex_prompt.txt
+*procurement_intelligence_spec_and_*prompt.txt
 PRODUCT.md
 DESIGN.md
 CONTEXT.md
