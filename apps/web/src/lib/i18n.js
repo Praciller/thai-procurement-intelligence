@@ -107,7 +107,7 @@ const dictionaries = {
     assistantPage: {
       title: "AI Assistant",
       description:
-        "Ask natural-language questions. The backend retrieves procurement records first, then uses the configured LLM provider only when enabled.",
+        "Ask natural-language questions. The backend retrieves procurement records first and returns a deterministic evidence-bound answer.",
     },
     assistantClient: {
       question: "Question",
@@ -117,7 +117,7 @@ const dictionaries = {
       unavailableTitle: "Assistant unavailable",
       unavailableBody: "Assistant request failed. Confirm API is running and sample data has been ingested.",
       answer: "Answer",
-      disabled: "External LLM generation is disabled; a deterministic evidence answer is shown.",
+      disabled: "A deterministic evidence answer is shown from retrieved records.",
       retrievedEvidence: "Retrieved evidence",
       officialSource: "Official source",
       exampleQuestions: "Example questions",
@@ -170,7 +170,7 @@ const dictionaries = {
         {
           title: "AI design",
           body:
-            "LLM calls are optional, provider-based, and evidence limited. Gemini and OpenRouter providers sit behind the same interface as the deterministic mock provider, and summaries are cached in the database.",
+            "The current public implementation uses deterministic, evidence-bound generation and cached summaries. External GenAI remains an optional extension point rather than a runtime requirement.",
         },
         {
           title: "Cost control",
@@ -223,11 +223,11 @@ const dictionaries = {
       generating: "Generating summary...",
       returnedCached: "Returned cached summary",
       generatedWith: "Generated with",
-      unavailable: "AI summary unavailable. Check ENABLE_LLM or use mock provider for local demo.",
+      unavailable: "AI summary unavailable. Confirm the API is running and this record is available.",
       refresh: "Refresh",
       generate: "Generate",
       placeholder:
-        "Generate a concise evidence-limited summary. If no LLM key is configured, the backend can use the deterministic mock provider for local testing.",
+        "Generate a concise evidence-limited summary from stored procurement fields and retrieved evidence.",
     },
   },
   th: {
@@ -331,7 +331,7 @@ const dictionaries = {
     assistantPage: {
       title: "ผู้ช่วย AI",
       description:
-        "ถามคำถามภาษาธรรมชาติ ระบบหลังบ้านจะค้นระเบียนจัดซื้อจัดจ้างก่อน แล้วจึงใช้ผู้ให้บริการ LLM ที่ตั้งค่าไว้เมื่อเปิดใช้งาน",
+        "ถามคำถามภาษาธรรมชาติ ระบบหลังบ้านจะค้นระเบียนจัดซื้อจัดจ้างก่อน แล้วส่งคำตอบแบบกำหนดผลได้ที่จำกัดอยู่กับหลักฐาน",
     },
     assistantClient: {
       question: "คำถาม",
@@ -341,7 +341,7 @@ const dictionaries = {
       unavailableTitle: "ผู้ช่วยไม่พร้อมใช้งาน",
       unavailableBody: "คำขอผู้ช่วยล้มเหลว โปรดยืนยันว่า API ทำงานและนำเข้าข้อมูลตัวอย่างแล้ว",
       answer: "คำตอบ",
-      disabled: "ปิดการสร้างคำตอบด้วย LLM ภายนอก และแสดงคำตอบหลักฐานแบบกำหนดผลได้",
+      disabled: "แสดงคำตอบหลักฐานแบบกำหนดผลได้จากระเบียนที่ค้นคืน",
       retrievedEvidence: "หลักฐานที่ค้นคืนได้",
       officialSource: "แหล่งข้อมูลทางการ",
       exampleQuestions: "ตัวอย่างคำถาม",
@@ -394,7 +394,7 @@ const dictionaries = {
         {
           title: "การออกแบบ AI",
           body:
-            "การเรียก LLM เป็นทางเลือก แยกตามผู้ให้บริการ และจำกัดตามหลักฐาน Gemini และ OpenRouter ใช้อินเทอร์เฟซเดียวกับ mock provider แบบกำหนดได้ และสรุปจะถูกแคชในฐานข้อมูล",
+            "implementation สาธารณะปัจจุบันสร้างคำตอบแบบกำหนดผลได้และจำกัดตามหลักฐาน พร้อมใช้แคชสำหรับสรุป ส่วน external GenAI ยังคงเป็น extension point ทางเลือกและไม่ใช่ข้อกำหนดของ runtime",
         },
         {
           title: "ควบคุมต้นทุน",
@@ -447,11 +447,11 @@ const dictionaries = {
       generating: "กำลังสร้างสรุป...",
       returnedCached: "ส่งคืนสรุปจากแคช",
       generatedWith: "สร้างด้วย",
-      unavailable: "สรุปด้วย AI ไม่พร้อมใช้งาน โปรดตรวจ ENABLE_LLM หรือใช้ mock provider สำหรับเดโมในเครื่อง",
+      unavailable: "สรุปด้วย AI ไม่พร้อมใช้งาน โปรดยืนยันว่า API ทำงานและมีระเบียนนี้อยู่",
       refresh: "รีเฟรช",
       generate: "สร้าง",
       placeholder:
-        "สร้างสรุปสั้นแบบจำกัดตามหลักฐาน หากไม่ได้ตั้งค่า LLM key ระบบหลังบ้านสามารถใช้ mock provider แบบกำหนดได้สำหรับการทดสอบในเครื่อง",
+        "สร้างสรุปสั้นที่จำกัดตามหลักฐานจากฟิลด์จัดซื้อจัดจ้างที่จัดเก็บและหลักฐานที่ค้นคืน",
     },
   },
 };

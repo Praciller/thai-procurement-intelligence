@@ -7,7 +7,6 @@ from app.models import AIQALog
 from app.schemas import AssistantRequest, AssistantResponse, Citation, ProcurementRecordListItem
 from app.services.embeddings import hash_embedding
 from app.services.llm.factory import get_llm_provider
-from app.services.rate_limit import check_hourly_ai_limit
 from app.services.search import hybrid_candidates, keyword_candidates
 
 router = APIRouter(prefix="/assistant", tags=["assistant"])
@@ -22,18 +21,8 @@ async def ask(request: AssistantRequest, session: Session = Depends(get_session)
         candidates = keyword_candidates(session, request.question, limit=request.limit, filters=request.filters)
     records = [candidate.record for candidate in candidates]
 
-    if settings.enable_llm or settings.llm_provider == "mock":
-        provider = get_llm_provider(settings)
-        if settings.enable_llm and not check_hourly_ai_limit(settings.ai_rate_limit_per_hour, bucket="assistant"):
-            answer = "AI answering rate limit exceeded. Retrieved evidence records are shown below."
-            ai_enabled = False
-        else:
-            answer = await provider.answer_question(request.question, records)
-            ai_enabled = settings.enable_llm
-    else:
-        provider = get_llm_provider(settings)
-        answer = "AI answering is disabled. Retrieved evidence records are shown below."
-        ai_enabled = False
+    provider = get_llm_provider(settings)
+    answer = await provider.answer_question(request.question, records)
 
     session.add(
         AIQALog(
@@ -48,7 +37,7 @@ async def ask(request: AssistantRequest, session: Session = Depends(get_session)
 
     return AssistantResponse(
         answer=answer,
-        ai_enabled=ai_enabled,
+        ai_enabled=False,
         citations=[
             Citation(
                 id=record.id,

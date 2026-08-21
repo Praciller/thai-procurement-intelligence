@@ -7,7 +7,9 @@ from pathlib import Path
 
 FORBIDDEN_NAMES = {".env", ".env.local"}
 FORBIDDEN_SUFFIXES = {".db", ".dump", ".sqlite", ".sql"}
-SECRET_ASSIGNMENT = re.compile(r"(?im)^(?:GEMINI_API_KEY|OPENROUTER_API_KEY|SUPABASE_DB_URL)[ \t]*=[ \t]*[^\s#]+")
+SECRET_ASSIGNMENT = re.compile(
+    r"(?im)^(?:[A-Z0-9_]*(?:API_KEY|TOKEN|SECRET)|SUPABASE_DB_URL)[ \t]*=[ \t]*[^\s#]+"
+)
 
 
 def tracked_files() -> list[Path]:

@@ -1,19 +1,16 @@
-# Security And Secret Rotation
+# Security and secret rotation
 
-Do not commit provider keys, database URLs, or GitHub tokens.
+Do not commit credentials, database URLs, or access tokens.
 
-The current deployment stores runtime secrets in Vercel environment variables. If a key is pasted into chat, terminal logs, screenshots, or issue text, treat it as exposed.
+Runtime secrets belong in deployment environment variables. If any credential is pasted into chat, terminal logs, screenshots, issue text, or public Git history, treat it as exposed and rotate it at the issuing service.
 
-## Rotation Checklist
+## Rotation checklist
 
-1. Revoke the exposed GitHub token.
-2. Create a new GitHub token with the smallest repo scope needed.
-3. Revoke the exposed OpenRouter key.
-4. Create a new OpenRouter key and update `OPENROUTER_API_KEY` in Vercel Production.
-5. Revoke the exposed Gemini key if it will be used.
-6. Create a new Gemini key only if `LLM_PROVIDER=gemini` is needed.
-7. Redeploy Vercel after changing runtime environment variables.
-8. Run production smoke checks:
+1. Revoke the exposed credential.
+2. Create a replacement with the smallest scope needed.
+3. Update the protected runtime environment variable.
+4. Redeploy the affected service.
+5. Run production smoke checks:
 
 ```bash
 curl https://thai-procurement-intelligence.vercel.app/backend/api/health
@@ -21,14 +18,18 @@ curl https://thai-procurement-intelligence.vercel.app/backend/api/health/readine
 curl "https://thai-procurement-intelligence.vercel.app/backend/api/records?page_size=1"
 ```
 
-## Current Public Client Variables
+## Public client variables
 
 These are intentionally public because browser code can read any `NEXT_PUBLIC_` value:
 
 - `NEXT_PUBLIC_API_BASE_URL`
 - `NEXT_PUBLIC_SITE_URL`
 
-Never put private API keys in `NEXT_PUBLIC_` variables.
+Never put private credentials in `NEXT_PUBLIC_` variables.
+
+## Inference boundary
+
+The public summary and cited-answer paths are deterministic and require no external inference credential. Results remain bounded by stored and retrieved procurement records and must be reviewed against source evidence.
 
 ## Data ingestion and export
 
@@ -37,7 +38,7 @@ Never put private API keys in `NEXT_PUBLIC_` variables.
 - Automated acquisition is hard-coded to the approved `data.go.th` HTTPS URL, uses a timeout and 1 MiB response limit, validates content type, and verifies SHA-256 before import.
 - The public API does not accept arbitrary acquisition URLs or filesystem paths.
 - CSV export prefixes cells beginning with `=`, `+`, `-`, or `@` to prevent spreadsheet formula execution.
-- React escapes displayed source text. Provider keys remain server-side.
+- React escapes displayed source text.
 
 ## Ethics
 

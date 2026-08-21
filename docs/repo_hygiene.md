@@ -1,15 +1,7 @@
-# Repository Hygiene
+# Repository hygiene
 
-The current local and GitHub default branch is `codex/mvp-procurement-intelligence`; no `main` branch currently exists on the remote. Rename only through an additive, reviewed migration:
+The public default branch is `main`. Branch migrations should remain additive and reviewed: create or update a branch, verify CI and links, then merge through a pull request. Do not force-push, delete shared history, or rewrite commit ancestry as part of routine maintenance.
 
-```powershell
-git fetch origin
-git switch codex/mvp-procurement-intelligence
-git pull --ff-only
-git branch main
-git push -u origin main
-```
+Internal briefs and development-context files should remain ignored. Secrets, `.env` files, databases, dumps, generated exports/evidence, caches, uploads, build output, and screenshots containing private information must remain untracked.
 
-Then change the default branch to `main` in GitHub Settings > Branches. Verify CI and links on `main`. Keep the old branch until the user deliberately decides it is no longer needed; do not force-push, delete branches, or rewrite history.
-
-Internal briefs and agent-context files are intentionally ignored. Secrets, `.env` files, databases, dumps, generated exports/evidence, caches, uploads, build output, and screenshots containing private information must remain untracked.
+Before merging public maintenance work, verify that issue titles, branch names, commit messages, pull-request metadata, source files, documentation, tests, and visible screenshots use project-focused wording rather than development-tool provenance.

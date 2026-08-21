@@ -34,6 +34,13 @@ jobs:
         with:
           python-version: "3.12"
       - run: python scripts/check_repo_guardrails.py
+      - name: Export review snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: review-snapshot
+          path: .
+          if-no-files-found: error
+          retention-days: 1
 
   web:
     runs-on: ubuntu-latest
