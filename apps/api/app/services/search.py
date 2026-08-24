@@ -25,6 +25,7 @@ MIN_THAI_FUZZY_SCORE = 0.30
 class SearchResult:
     record: ProcurementRecord
     score: float | None = None
+    exact_phrase: bool = False
 
 
 def _stable_record_key(result: SearchResult) -> tuple[str, str, str, str]:
@@ -141,8 +142,8 @@ def keyword_candidates(
             continue
         if query_has_thai and not phrase_match and score < MIN_THAI_FUZZY_SCORE:
             continue
-        results.append(SearchResult(record=record, score=score))
-    return sorted(results, key=lambda item: (-(item.score or 0), *_stable_record_key(item)))[:limit]
+        results.append(SearchResult(record=record, score=score, exact_phrase=phrase_match))
+    return sorted(results, key=lambda item: (-int(item.exact_phrase), -(item.score or 0), *_stable_record_key(item)))[:limit]
 
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:
@@ -181,6 +182,9 @@ def hybrid_candidates(
     limit: int = 8,
     filters: dict[str, Any] | None = None,
 ) -> list[SearchResult]:
+    query = query.strip()
+    if not query:
+        return []
     by_id: dict[str, SearchResult] = {}
     for rank, result in enumerate(keyword_candidates(session, query, limit=limit, filters=filters), start=1):
         by_id[result.record.id] = SearchResult(record=result.record, score=_rrf_score(rank, KEYWORD_WEIGHT))

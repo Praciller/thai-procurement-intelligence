@@ -38,6 +38,7 @@ def list_records(
     search_mode: SearchMode = "keyword",
     session: Session = Depends(get_session),
 ) -> RecordsResponse:
+    q = q.strip() if q is not None else None
     filters = {
         "q": q,
         "province": province,

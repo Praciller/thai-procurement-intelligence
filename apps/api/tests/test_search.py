@@ -102,3 +102,49 @@ def test_keyword_candidates_reject_blank_query(session: Session):
     session.commit()
 
     assert keyword_candidates(session, "   ", limit=5) == []
+
+
+def test_exact_phrase_strictly_outranks_unordered_full_token_match(session: Session):
+    session.add_all([_record("a-nonphrase", "beta alpha"), _record("z-phrase", "alpha beta")])
+    session.commit()
+
+    results = keyword_candidates(session, "alpha beta", limit=2)
+
+    assert [item.record.source_record_id for item in results] == ["z-phrase", "a-nonphrase"]
+
+
+def test_hybrid_candidates_reject_blank_query_before_semantic_retrieval(session: Session):
+    record = _record("semantic", "unrelated")
+    session.add(record)
+    session.flush()
+    session.add(
+        ProcurementEmbedding(
+            procurement_id=record.id,
+            embedding_model="fixture",
+            embedding=[1.0, 0.0],
+            embedded_text=record.project_name,
+            text_hash="d" * 64,
+        )
+    )
+    session.commit()
+
+    assert hybrid_candidates(session, "   ", [1.0, 0.0], limit=5) == []
+
+
+def test_equal_keyword_scores_use_stable_source_key(session: Session):
+    session.add_all([_record("b", "alpha"), _record("a", "alpha")])
+    session.commit()
+
+    results = keyword_candidates(session, "alpha", limit=2)
+
+    assert [item.record.source_record_id for item in results] == ["a", "b"]
+
+
+def test_min_budget_zero_is_not_treated_as_missing(session: Session):
+    session.add_all([_record("zero", "Zero budget", "0"), _record("paid", "Paid budget", "100")])
+    session.commit()
+
+    results, total = search_records(session, {"min_budget": 0})
+
+    assert total == 2
+    assert {item.record.source_record_id for item in results} == {"zero", "paid"}
