@@ -29,6 +29,21 @@ The root `vercel.json` defines two services:
 - `web`: `apps/web` at `/`
 - `api`: `apps/api/main.py` at `/backend`
 
+## Production deployment policy
+
+The existing Vercel project currently tracks `codex/mvp-procurement-intelligence` as its Git production branch. Merges to `main` therefore create preview deployments; production is released manually after verification. Do not promote an existing preview when its environment target is unknown, because promotion does not rebuild the deployment with production configuration.
+
+From a clean checkout of the commit being released, use the linked existing project and run:
+
+```powershell
+git rev-parse HEAD
+vercel pull --yes --environment=production
+$sha = git rev-parse HEAD
+vercel deploy --prod --yes --meta githubCommitSha=$sha --meta githubCommitRef=main
+```
+
+Before releasing, confirm the SHA, run the API/web/guardrail checks below, and confirm that production environment variable names include `DATABASE_URL` and `DATASET_MODE` without printing their values. After releasing, verify the deployment metadata reports `target=production`, `readyState=READY`, and `githubCommitSha=$sha`; then verify the stable readiness, records, retrieval, and whitespace-validation smoke checks.
+
 Because Vercel strips the service prefix before forwarding to FastAPI, browser requests should use `/backend/api`. The FastAPI service targets Python 3.12. Server-rendered pages also need `NEXT_PUBLIC_SITE_URL`; otherwise a relative API base can resolve through a protected deployment URL and produce fallback zero-data pages.
 
 The summary and cited-answer paths remain deterministic in both local and hosted shapes and require no network inference configuration.
