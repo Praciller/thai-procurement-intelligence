@@ -18,7 +18,7 @@ After local startup, review these areas:
 4. Assistant: ask a procurement question and verify cited evidence.
 5. Data Status: confirm readiness, ingestion state, source identity, and record count.
 
-Dataset boundary: `synthetic` remains the default demo mode. Local `official_snapshot` mode uses a separately ingested 250-record DGA/data.go.th snapshot retrieved on 2026-06-21. The modes are never aggregated, and the snapshot is not complete, representative, or real-time.
+Dataset boundary: `synthetic` remains the default local demo mode. `official_snapshot` uses a separately ingested 250-record DGA/data.go.th snapshot retrieved on 2026-06-21. The current hosted Vercel deployment was verified on 2026-08-24 in `official_snapshot` mode with 250 records. The modes are never aggregated, and the snapshot is not complete, representative, or real-time.
 
 ## Screenshots
 
@@ -161,7 +161,7 @@ Source governance, mapping, acquisition, and limitations: [source review](docs/o
 
 ## Measured evidence
 
-The deterministic evaluation on 2026-06-22 measured 250/250 valid rows, zero rejected/duplicate/warning rows, an idempotent second import with 250 unchanged rows, keyword precision@5 of 1.0, hybrid precision@5 of 0.5, citation/source-link completeness of 1.0, and unsupported-claim rate of 0.0 across four labeled queries. These are bounded-fixture results, not production-scale claims. See [quality](reports/official_snapshot/data_quality_summary.md) and [evaluation](reports/official_snapshot/evaluation.md).
+The judged retrieval evaluation regenerated on 2026-08-24 uses eight frozen queries (seven positive and one negative control) against the committed 250-record snapshot. Keyword and hybrid retrieval both measured mean Precision@5 `0.7714`, Recall@5 `0.4929`, nDCG@5 `0.8571`, and MRR `0.8571`. Keyword returned zero results for the negative control; hybrid returned five false positives, so the deterministic hash-vector path is documented as an architecture/demo baseline rather than production semantic retrieval. Citation and source-link completeness remained `1.0`, the second import left all 250 records unchanged, and the forbidden-claim-term rate remained `0.0`. See [quality](reports/official_snapshot/data_quality_summary.md), [evaluation](reports/official_snapshot/evaluation.md), and the [judgment set](evals/retrieval/official_snapshot_judgments.json).
 
 ## Official snapshot local mode
 
@@ -200,7 +200,7 @@ The hosted deployment is optional. The local review path remains the canonical z
 - The official fixture is a small non-random subset from one source resource part.
 - The portal's attribution license label does not specify a version.
 - Public ingestion is disabled unless a server-side admin token is explicitly configured.
-- The hosted deployment remains synthetic until separately migrated and verified.
+- The hosted deployment currently serves the bounded official snapshot; re-check readiness and Data Status after future deployments because hosted state can change independently of the repository.
 - Public data is not proof of fraud, corruption, misconduct, or suspicious behavior.
 
 ## Portfolio bullet

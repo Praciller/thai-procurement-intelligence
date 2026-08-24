@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "snapshot_id": "dga-egp-contract-2568-250",
+  "k": 5,
+  "label_policy": "Frozen against the committed 250-record snapshot. Exact-policy queries include every source record whose project title satisfies the documented rule. The motorcycle alias query is a manual intent judgment. The negative query was verified to have no relevant records.",
+  "queries": [
+    {
+      "id": "computer-title-term",
+      "query": "คอมพิวเตอร์",
+      "relevance_rule": "Project title contains the Thai term for computer.",
+      "relevant_source_record_ids": [
+        "67119524001",
+        "67129510057",
+        "68019547010",
+        "68029031977",
+        "68039435618",
+        "68059306942",
+        "68059453523",
+        "68049009291",
+        "68079634532",
+        "68079436929",
+        "68079449765",
+        "68069590790",
+        "68079491988",
+        "68099301517",
+        "68099358212",
+        "68099437378",
+        "68079017037"
+      ]
+    },
+    {
+      "id": "construction-materials-title-term",
+      "query": "วัสดุก่อสร้าง",
+      "relevance_rule": "Project title contains the exact phrase for construction materials.",
+      "relevant_source_record_ids": [
+        "67119321505",
+        "67119575754",
+        "67129023138",
+        "67129394457",
+        "68019226648",
+        "68059300454",
+        "67129340041",
+        "68099427648",
+        "68099109851",
+        "68079103176"
+      ]
+    },
+    {
+      "id": "brake-fluid-title-term",
+      "query": "น้ำมันเบรก",
+      "relevance_rule": "Project title contains the exact phrase for brake fluid.",
+      "relevant_source_record_ids": [
+        "67119257386",
+        "67129018376"
+      ]
+    },
+    {
+      "id": "office-supplies-title-term",
+      "query": "วัสดุสำนักงาน",
+      "relevance_rule": "Project title contains the exact phrase for office supplies.",
+      "relevant_source_record_ids": [
+        "67129269493",
+        "68019273922",
+        "68019017143",
+        "68019394180",
+        "68019034410",
+        "68039187144",
+        "68049003116",
+        "68059360974",
+        "68059300250",
+        "68059200718",
+        "68069215953",
+        "68019138490",
+        "68039542566",
+        "68059355909",
+        "68059199390",
+        "68059354343",
+        "68079267277",
+        "68099553903",
+        "68099247557",
+        "68099196858",
+        "68099305145",
+        "68069294053"
+      ]
+    },
+    {
+      "id": "motorcycle-repair-title-intent",
+      "query": "ซ่อมรถจักรยานยนต์",
+      "relevance_rule": "Project title contains both repair and motorcycle terms.",
+      "relevant_source_record_ids": [
+        "67129349788",
+        "67129177126",
+        "68019316644",
+        "68019308874",
+        "68019293740",
+        "68099337644",
+        "68099004454"
+      ]
+    },
+    {
+      "id": "computer-repair-title-intent",
+      "query": "ซ่อมคอมพิวเตอร์",
+      "relevance_rule": "Project title contains both repair and computer terms.",
+      "relevant_source_record_ids": [
+        "68019547010",
+        "68059453523",
+        "68079634532",
+        "68079436929",
+        "68079449765",
+        "68069590790",
+        "68099437378"
+      ]
+    },
+    {
+      "id": "motorcycle-repair-colloquial-alias",
+      "query": "ซ่อมมอเตอร์ไซค์",
+      "relevance_rule": "Manual intent judgment: colloquial motorcycle-repair wording maps to the same motorcycle-repair records.",
+      "relevant_source_record_ids": [
+        "67129349788",
+        "67129177126",
+        "68019316644",
+        "68019308874",
+        "68019293740",
+        "68099337644",
+        "68099004454"
+      ]
+    },
+    {
+      "id": "negative-space-satellite",
+      "query": "ดาวเทียมสำรวจอวกาศ",
+      "relevance_rule": "Negative control: no project in the bounded snapshot is about satellites or space exploration.",
+      "relevant_source_record_ids": []
+    }
+  ]
+}

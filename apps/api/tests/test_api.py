@@ -133,3 +133,26 @@ def test_assistant_refuses_when_no_evidence_exists(client: TestClient):
     assert response.status_code == 200
     assert response.json()["answer"] == "Cannot determine from available procurement records."
     assert response.json()["citations"] == []
+
+
+def test_semantic_search_rejects_whitespace_query(client: TestClient):
+    response = client.post("/api/search/semantic", json={"query": "   ", "limit": 5})
+
+    assert response.status_code == 422
+
+
+def test_assistant_rejects_whitespace_question(client: TestClient):
+    response = client.post("/api/assistant/ask", json={"question": "   ", "limit": 4})
+
+    assert response.status_code == 422
+
+
+def test_records_semantic_mode_treats_whitespace_as_no_query(client: TestClient, session: Session):
+    seed(session)
+
+    response = client.get("/api/records?search_mode=semantic&q=%20%20%20")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] == 2
+    assert all(item["relevance_score"] is None for item in data["items"])

@@ -1,11 +1,22 @@
 {
   "snapshot_id": "dga-egp-contract-2568-250",
-  "query_count": 4,
-  "keyword_precision_at_5": 1.0,
-  "hybrid_precision_at_5": 0.5,
+  "judgment_set": "evals/retrieval/official_snapshot_judgments.json",
+  "judged_query_count": 8,
+  "positive_query_count": 7,
+  "negative_query_count": 1,
+  "keyword_mean_precision_at_5": 0.7714,
+  "keyword_mean_recall_at_5": 0.4929,
+  "keyword_mean_ndcg_at_5": 0.8571,
+  "keyword_mean_mrr": 0.8571,
+  "keyword_negative_false_positive_count": 0,
+  "hybrid_mean_precision_at_5": 0.7714,
+  "hybrid_mean_recall_at_5": 0.4929,
+  "hybrid_mean_ndcg_at_5": 0.8571,
+  "hybrid_mean_mrr": 0.8571,
+  "hybrid_negative_false_positive_count": 5,
   "citation_completeness": 1.0,
   "source_link_completeness": 1.0,
-  "unsupported_claim_rate": 0.0,
+  "forbidden_claim_term_rate": 0.0,
   "dataset_mode_isolation": true,
   "idempotency": {
     "first_inserted": 250,
@@ -13,16 +24,290 @@
     "second_unchanged": 250,
     "record_count_after_second_run": 250
   },
-  "keyword_search_latency_ms": {
-    "median": 1.726,
-    "max": 3.061,
-    "environment": "in-memory SQLite, bounded local fixture"
-  },
-  "query_labels": [
-    "คอมพิวเตอร์",
-    "น้ำมันเบรก",
-    "วัสดุก่อสร้าง",
-    "ซ่อมบำรุงรถยนต์"
+  "label_policy": "Frozen against the committed 250-record snapshot. Exact-policy queries include every source record whose project title satisfies the documented rule. The motorcycle alias query is a manual intent judgment. The negative query was verified to have no relevant records.",
+  "per_query": [
+    {
+      "id": "computer-title-term",
+      "query": "คอมพิวเตอร์",
+      "relevance_rule": "Project title contains the Thai term for computer.",
+      "relevant_count": 17,
+      "keyword_ranked_source_record_ids": [
+        "67119524001",
+        "67129510057",
+        "68019547010",
+        "68029031977",
+        "68039435618"
+      ],
+      "hybrid_ranked_source_record_ids": [
+        "67119524001",
+        "67129510057",
+        "68019547010",
+        "68029031977",
+        "68039435618"
+      ],
+      "keyword": {
+        "precision_at_k": 1.0,
+        "recall_at_k": 0.29411764705882354,
+        "ndcg_at_k": 1.0,
+        "mrr": 1.0,
+        "false_positive_count": 0,
+        "eligible_for_relevance_average": true
+      },
+      "hybrid": {
+        "precision_at_k": 1.0,
+        "recall_at_k": 0.29411764705882354,
+        "ndcg_at_k": 1.0,
+        "mrr": 1.0,
+        "false_positive_count": 0,
+        "eligible_for_relevance_average": true
+      }
+    },
+    {
+      "id": "construction-materials-title-term",
+      "query": "วัสดุก่อสร้าง",
+      "relevance_rule": "Project title contains the exact phrase for construction materials.",
+      "relevant_count": 10,
+      "keyword_ranked_source_record_ids": [
+        "67119321505",
+        "67119575754",
+        "67129023138",
+        "67129340041",
+        "67129394457"
+      ],
+      "hybrid_ranked_source_record_ids": [
+        "67119321505",
+        "67129023138",
+        "67129394457",
+        "67119575754",
+        "67129340041"
+      ],
+      "keyword": {
+        "precision_at_k": 1.0,
+        "recall_at_k": 0.5,
+        "ndcg_at_k": 1.0,
+        "mrr": 1.0,
+        "false_positive_count": 0,
+        "eligible_for_relevance_average": true
+      },
+      "hybrid": {
+        "precision_at_k": 1.0,
+        "recall_at_k": 0.5,
+        "ndcg_at_k": 1.0,
+        "mrr": 1.0,
+        "false_positive_count": 0,
+        "eligible_for_relevance_average": true
+      }
+    },
+    {
+      "id": "brake-fluid-title-term",
+      "query": "น้ำมันเบรก",
+      "relevance_rule": "Project title contains the exact phrase for brake fluid.",
+      "relevant_count": 2,
+      "keyword_ranked_source_record_ids": [
+        "67119257386",
+        "67129018376",
+        "67109259941",
+        "67109381306",
+        "67129292596"
+      ],
+      "hybrid_ranked_source_record_ids": [
+        "67119257386",
+        "67129018376",
+        "67109259941",
+        "67109381306",
+        "67129292596"
+      ],
+      "keyword": {
+        "precision_at_k": 0.4,
+        "recall_at_k": 1.0,
+        "ndcg_at_k": 1.0,
+        "mrr": 1.0,
+        "false_positive_count": 3,
+        "eligible_for_relevance_average": true
+      },
+      "hybrid": {
+        "precision_at_k": 0.4,
+        "recall_at_k": 1.0,
+        "ndcg_at_k": 1.0,
+        "mrr": 1.0,
+        "false_positive_count": 3,
+        "eligible_for_relevance_average": true
+      }
+    },
+    {
+      "id": "office-supplies-title-term",
+      "query": "วัสดุสำนักงาน",
+      "relevance_rule": "Project title contains the exact phrase for office supplies.",
+      "relevant_count": 22,
+      "keyword_ranked_source_record_ids": [
+        "67129269493",
+        "68019017143",
+        "68019034410",
+        "68019138490",
+        "68019273922"
+      ],
+      "hybrid_ranked_source_record_ids": [
+        "67129269493",
+        "68019017143",
+        "68019034410",
+        "68019138490",
+        "68019273922"
+      ],
+      "keyword": {
+        "precision_at_k": 1.0,
+        "recall_at_k": 0.22727272727272727,
+        "ndcg_at_k": 1.0,
+        "mrr": 1.0,
+        "false_positive_count": 0,
+        "eligible_for_relevance_average": true
+      },
+      "hybrid": {
+        "precision_at_k": 1.0,
+        "recall_at_k": 0.22727272727272727,
+        "ndcg_at_k": 1.0,
+        "mrr": 1.0,
+        "false_positive_count": 0,
+        "eligible_for_relevance_average": true
+      }
+    },
+    {
+      "id": "motorcycle-repair-title-intent",
+      "query": "ซ่อมรถจักรยานยนต์",
+      "relevance_rule": "Project title contains both repair and motorcycle terms.",
+      "relevant_count": 7,
+      "keyword_ranked_source_record_ids": [
+        "67129177126",
+        "68099004454",
+        "68019308874",
+        "68019316644",
+        "68099337644"
+      ],
+      "hybrid_ranked_source_record_ids": [
+        "68099004454",
+        "67129177126",
+        "68019308874",
+        "68099337644",
+        "68019316644"
+      ],
+      "keyword": {
+        "precision_at_k": 1.0,
+        "recall_at_k": 0.7142857142857143,
+        "ndcg_at_k": 1.0,
+        "mrr": 1.0,
+        "false_positive_count": 0,
+        "eligible_for_relevance_average": true
+      },
+      "hybrid": {
+        "precision_at_k": 1.0,
+        "recall_at_k": 0.7142857142857143,
+        "ndcg_at_k": 1.0,
+        "mrr": 1.0,
+        "false_positive_count": 0,
+        "eligible_for_relevance_average": true
+      }
+    },
+    {
+      "id": "computer-repair-title-intent",
+      "query": "ซ่อมคอมพิวเตอร์",
+      "relevance_rule": "Project title contains both repair and computer terms.",
+      "relevant_count": 7,
+      "keyword_ranked_source_record_ids": [
+        "68019547010",
+        "68059453523",
+        "68079449765",
+        "68069590790",
+        "68079436929"
+      ],
+      "hybrid_ranked_source_record_ids": [
+        "68079436929",
+        "68019547010",
+        "68059453523",
+        "68079449765",
+        "68069590790"
+      ],
+      "keyword": {
+        "precision_at_k": 1.0,
+        "recall_at_k": 0.7142857142857143,
+        "ndcg_at_k": 1.0,
+        "mrr": 1.0,
+        "false_positive_count": 0,
+        "eligible_for_relevance_average": true
+      },
+      "hybrid": {
+        "precision_at_k": 1.0,
+        "recall_at_k": 0.7142857142857143,
+        "ndcg_at_k": 1.0,
+        "mrr": 1.0,
+        "false_positive_count": 0,
+        "eligible_for_relevance_average": true
+      }
+    },
+    {
+      "id": "motorcycle-repair-colloquial-alias",
+      "query": "ซ่อมมอเตอร์ไซค์",
+      "relevance_rule": "Manual intent judgment: colloquial motorcycle-repair wording maps to the same motorcycle-repair records.",
+      "relevant_count": 7,
+      "keyword_ranked_source_record_ids": [
+        "68019547010",
+        "68059453523",
+        "68069590790",
+        "68079436929",
+        "68079449765"
+      ],
+      "hybrid_ranked_source_record_ids": [
+        "68059453523",
+        "68019547010",
+        "68069590790",
+        "68079436929",
+        "68079449765"
+      ],
+      "keyword": {
+        "precision_at_k": 0.0,
+        "recall_at_k": 0.0,
+        "ndcg_at_k": 0.0,
+        "mrr": 0.0,
+        "false_positive_count": 5,
+        "eligible_for_relevance_average": true
+      },
+      "hybrid": {
+        "precision_at_k": 0.0,
+        "recall_at_k": 0.0,
+        "ndcg_at_k": 0.0,
+        "mrr": 0.0,
+        "false_positive_count": 5,
+        "eligible_for_relevance_average": true
+      }
+    },
+    {
+      "id": "negative-space-satellite",
+      "query": "ดาวเทียมสำรวจอวกาศ",
+      "relevance_rule": "Negative control: no project in the bounded snapshot is about satellites or space exploration.",
+      "relevant_count": 0,
+      "keyword_ranked_source_record_ids": [],
+      "hybrid_ranked_source_record_ids": [
+        "68019226648",
+        "68039494103",
+        "68019134999",
+        "68039160546",
+        "68099517815"
+      ],
+      "keyword": {
+        "precision_at_k": null,
+        "recall_at_k": null,
+        "ndcg_at_k": null,
+        "mrr": null,
+        "false_positive_count": 0,
+        "eligible_for_relevance_average": false
+      },
+      "hybrid": {
+        "precision_at_k": null,
+        "recall_at_k": null,
+        "ndcg_at_k": null,
+        "mrr": null,
+        "false_positive_count": 5,
+        "eligible_for_relevance_average": false
+      }
+    }
   ],
-  "scope_note": "Bounded fixture evaluation; not production-scale or system-wide evidence."
+  "scope_note": "Bounded judged retrieval benchmark on one 250-record snapshot; deterministic hash vectors are a review aid, not production semantic embeddings."
 }
