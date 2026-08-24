@@ -49,7 +49,7 @@ uv run python -m app.jobs.import_csv --file ../../data/sample/procurement_sample
 uv run python -m app.jobs.generate_embeddings --limit 1000
 ```
 
-Production remains in synthetic mode unless the migration, official import, environment mode, dataset banner, source links, readiness, search, assistant citations, and data-status page are all verified. This document does not authorize or perform a production deployment.
+The hosted production path was verified on 2026-08-24 with `DATASET_MODE=official_snapshot`; `/backend/api/health/readiness` reported `database=ok` and `record_count=250`. Future deployments must re-verify the migration, official import, environment mode, dataset banner, source links, readiness, search, assistant citations, and Data Status page rather than assuming hosted state from repository configuration alone.
 
 The API container applies Alembic migrations before starting. Databases created by an older release may contain the `0001` tables without an `alembic_version` row. Verify that the schema matches the original baseline, then perform the one-time safe baseline and upgrade:
 

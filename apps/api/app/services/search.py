@@ -18,6 +18,7 @@ THAI_TOKEN_RE = re.compile(r"^[\u0E00-\u0E7F]+$")
 RRF_K = 60
 KEYWORD_WEIGHT = 0.55
 SEMANTIC_WEIGHT = 0.45
+MIN_THAI_FUZZY_SCORE = 0.30
 
 
 @dataclass
@@ -115,17 +116,15 @@ def keyword_candidates(
     limit: int = 8,
     filters: dict[str, Any] | None = None,
 ) -> list[SearchResult]:
-    stmt = (
-        apply_filters(select(ProcurementRecord), {"q": query, **(filters or {})})
-        .order_by(
-            ProcurementRecord.source_name,
-            ProcurementRecord.source_record_id,
-            ProcurementRecord.content_hash,
-            ProcurementRecord.id,
-        )
-        .limit(limit * 3)
+    structured_filters = {key: value for key, value in (filters or {}).items() if key != "q"}
+    stmt = apply_filters(select(ProcurementRecord), structured_filters).order_by(
+        ProcurementRecord.source_name,
+        ProcurementRecord.source_record_id,
+        ProcurementRecord.content_hash,
+        ProcurementRecord.id,
     )
     query_tokens = tokenize(query)
+    query_has_thai = any(THAI_TOKEN_RE.fullmatch(token) for token in TOKEN_RE.findall(query))
     results = []
     for record in session.scalars(stmt).all():
         haystack = " ".join(
@@ -135,6 +134,10 @@ def keyword_candidates(
         overlap = len(query_tokens & tokenize(haystack))
         phrase_match = query.strip().casefold() in haystack.casefold()
         score = 1.0 if phrase_match else overlap / max(len(query_tokens), 1)
+        if score <= 0:
+            continue
+        if query_has_thai and not phrase_match and score < MIN_THAI_FUZZY_SCORE:
+            continue
         results.append(SearchResult(record=record, score=score))
     return sorted(results, key=lambda item: (-(item.score or 0), *_stable_record_key(item)))[:limit]
 

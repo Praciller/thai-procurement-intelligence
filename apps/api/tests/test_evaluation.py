@@ -47,3 +47,30 @@ def test_judgment_validation_rejects_unknown_snapshot_ids():
 
     with pytest.raises(ValueError, match="missing"):
         validate_judgments(judgments, {"known"})
+
+
+def test_summarize_judged_metrics_averages_positive_queries_and_counts_negative_false_positives():
+    summarize = getattr(evaluation, "summarize_judged_metrics")
+    metrics = [
+        {"precision_at_k": 1.0, "recall_at_k": 0.5, "ndcg_at_k": 0.75, "mrr": 1.0, "false_positive_count": 0, "eligible_for_relevance_average": True},
+        {"precision_at_k": 0.5, "recall_at_k": 1.0, "ndcg_at_k": 0.5, "mrr": 0.5, "false_positive_count": 1, "eligible_for_relevance_average": True},
+        {"precision_at_k": None, "recall_at_k": None, "ndcg_at_k": None, "mrr": None, "false_positive_count": 3, "eligible_for_relevance_average": False},
+    ]
+
+    summary = summarize(metrics, k=5)
+
+    assert summary["positive_query_count"] == 2
+    assert summary["negative_query_count"] == 1
+    assert summary["mean_precision_at_5"] == pytest.approx(0.75)
+    assert summary["mean_recall_at_5"] == pytest.approx(0.75)
+    assert summary["mean_ndcg_at_5"] == pytest.approx(0.625)
+    assert summary["mean_mrr"] == pytest.approx(0.75)
+    assert summary["negative_false_positive_count"] == 3
+
+def test_console_json_is_ascii_safe_for_windows_code_pages():
+    console_json = getattr(evaluation, "console_json")
+    payload = {"query": "\u0e04\u0e2d\u0e21\u0e1e\u0e34\u0e27\u0e40\u0e15\u0e2d\u0e23\u0e4c"}
+
+    encoded = console_json(payload).encode("cp1252")
+
+    assert b"\\u0e" in encoded

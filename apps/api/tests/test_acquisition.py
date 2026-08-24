@@ -1,4 +1,6 @@
+import hashlib
 import importlib.util
+import json
 from pathlib import Path
 from urllib.request import Request
 
@@ -38,3 +40,13 @@ def test_redirect_handler_allows_approved_https_destination():
     )
 
     assert redirected.full_url == "https://data.go.th/approved.csv"
+
+
+
+def test_committed_official_snapshot_bytes_match_recorded_sha256():
+    root = Path(__file__).parents[3]
+    snapshot = root / "data" / "official" / "raw" / "dga-egp-contract-2568-250.csv"
+    metadata_path = root / "data" / "official" / "metadata" / "dga-egp-contract-2568-250.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+
+    assert hashlib.sha256(snapshot.read_bytes()).hexdigest() == metadata["sha256"]

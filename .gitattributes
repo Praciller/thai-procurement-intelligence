@@ -1,0 +1,2 @@
+data/official/raw/*.csv -text
+data/sample/*.csv text eol=lf

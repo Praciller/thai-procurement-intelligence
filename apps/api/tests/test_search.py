@@ -3,7 +3,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.models import ProcurementEmbedding, ProcurementRecord
-from app.services.search import hybrid_candidates, search_records, tokenize
+from app.services.search import hybrid_candidates, keyword_candidates, search_records, tokenize
 
 
 def _record(source_id: str, name: str, budget: str = "100") -> ProcurementRecord:
@@ -76,3 +76,22 @@ def test_hybrid_rank_fusion_is_not_dominated_by_keyword_score_magnitude(session:
     results = hybrid_candidates(session, query, [1.0, 0.0], limit=2)
 
     assert [item.record.source_record_id for item in results] == ["b", "a"]
+
+
+def test_keyword_candidates_score_before_applying_result_limit(session: Session):
+    session.add_all([_record(f"a-{index}", "alpha") for index in range(5)])
+    session.add(_record("z-target", "alpha beta"))
+    session.commit()
+
+    results = keyword_candidates(session, "alpha beta", limit=1)
+
+    assert [item.record.source_record_id for item in results] == ["z-target"]
+
+
+def test_keyword_candidates_drop_weak_thai_ngram_collisions(session: Session):
+    session.add(_record("weak", "\u0e42\u0e04\u0e23\u0e07\u0e01\u0e32\u0e23\u0e2a\u0e33\u0e23\u0e27\u0e08\u0e2d\u0e32\u0e04\u0e32\u0e23"))
+    session.commit()
+
+    results = keyword_candidates(session, "\u0e14\u0e32\u0e27\u0e40\u0e17\u0e35\u0e22\u0e21\u0e2a\u0e33\u0e23\u0e27\u0e08\u0e2d\u0e27\u0e01\u0e32\u0e28", limit=5)
+
+    assert results == []
