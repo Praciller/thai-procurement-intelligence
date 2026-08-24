@@ -116,6 +116,9 @@ def keyword_candidates(
     limit: int = 8,
     filters: dict[str, Any] | None = None,
 ) -> list[SearchResult]:
+    query = query.strip()
+    if not query:
+        return []
     structured_filters = {key: value for key, value in (filters or {}).items() if key != "q"}
     stmt = apply_filters(select(ProcurementRecord), structured_filters).order_by(
         ProcurementRecord.source_name,

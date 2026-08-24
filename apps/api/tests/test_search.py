@@ -95,3 +95,10 @@ def test_keyword_candidates_drop_weak_thai_ngram_collisions(session: Session):
     results = keyword_candidates(session, "\u0e14\u0e32\u0e27\u0e40\u0e17\u0e35\u0e22\u0e21\u0e2a\u0e33\u0e23\u0e27\u0e08\u0e2d\u0e27\u0e01\u0e32\u0e28", limit=5)
 
     assert results == []
+
+
+def test_keyword_candidates_reject_blank_query(session: Session):
+    session.add(_record("row", "alpha"))
+    session.commit()
+
+    assert keyword_candidates(session, "   ", limit=5) == []
