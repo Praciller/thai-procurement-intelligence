@@ -12,3 +12,5 @@ Rules used across providers:
 
 LLM providers are optional. With `ENABLE_LLM=false`, core search, dashboard, details, ingestion, export, and evidence retrieval still work.
 
+Provider routing and safety rules are documented in [`docs/llm-providers.md`](llm-providers.md). Keep external providers disabled for offline and CI runs.
+
