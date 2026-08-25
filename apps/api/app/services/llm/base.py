@@ -7,6 +7,10 @@ class LLMProvider(ABC):
     provider_name: str
     model_name: str
 
+    @property
+    def is_external(self) -> bool:
+        return self.provider_name != "mock"
+
     @abstractmethod
     async def generate_summary(self, record: ProcurementRecord) -> str:
         raise NotImplementedError

@@ -37,7 +37,7 @@ async def ask(request: AssistantRequest, session: Session = Depends(get_session)
 
     return AssistantResponse(
         answer=answer,
-        ai_enabled=False,
+        ai_enabled=provider.is_external,
         citations=[
             Citation(
                 id=record.id,
