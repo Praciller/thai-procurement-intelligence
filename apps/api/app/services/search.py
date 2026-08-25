@@ -19,6 +19,14 @@ RRF_K = 60
 KEYWORD_WEIGHT = 0.55
 SEMANTIC_WEIGHT = 0.45
 MIN_THAI_FUZZY_SCORE = 0.30
+ASSISTANT_QUERY_STOP_PHRASES = (
+    "จากข้อมูลที่ให้เท่านั้น",
+    "จากข้อมูลที่ค้นพบ",
+    "มีโครงการเกี่ยวกับ",
+    "ตอบสั้น ๆ",
+    "ตอบสั้นๆ",
+    "อะไรบ้าง",
+)
 
 
 @dataclass
@@ -41,6 +49,14 @@ def tokenize(text: str) -> set[str]:
         if THAI_TOKEN_RE.fullmatch(token) and len(token) > 3:
             tokens.update(token[index : index + 3] for index in range(len(token) - 2))
     return tokens
+
+
+def normalize_assistant_query(question: str) -> str:
+    """Remove deterministic Thai conversational wrappers before retrieval only."""
+    normalized = " ".join((question or "").split())
+    for phrase in ASSISTANT_QUERY_STOP_PHRASES:
+        normalized = re.sub(re.escape(phrase), " ", normalized, flags=re.IGNORECASE)
+    return " ".join(normalized.split())
 
 
 def apply_filters(stmt: Select, filters: dict[str, Any]) -> Select:
