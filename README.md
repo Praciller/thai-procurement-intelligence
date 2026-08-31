@@ -4,6 +4,16 @@ Evidence-based search and analytics for a bounded Thai public procurement snapsh
 
 This portfolio project demonstrates CSV ingestion, normalization, search/filtering, analytics, deterministic evidence summaries, semantic-style retrieval, and source-cited Q&A.
 
+## Recruiter snapshot
+
+**Signal:** Bilingual public-data intelligence with governed ingestion, provenance-aware search, analytics, and cited AI assistance.
+
+[Repository](https://github.com/Praciller/thai-procurement-intelligence) · [Live demo](https://thai-procurement-intelligence.vercel.app/) · [Dream Logs case study](https://dreamlogsdata.com/en/projects/thai-procurement-intelligence)
+
+**What this demonstrates:** bounded source ingestion · visible record provenance · deterministic retrieval and evidence-linked answers.
+
+**Boundary:** the hosted demo separates its synthetic path from the bounded official snapshot; it is not complete or real-time procurement coverage.
+
 ## Portfolio review path
 
 The primary review path is local, deterministic, and zero-cost. It requires no inference account or API key. Follow [docs/local_review.md](docs/local_review.md).
