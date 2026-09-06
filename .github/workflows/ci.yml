@@ -58,3 +58,81 @@ jobs:
       - run: npm --prefix apps/web ci
       - run: npm run web:lint
       - run: npm run web:build
+
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: thai_procurement
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/thai_procurement
+      LLM_PROVIDER: mock
+      ENABLE_LLM: "false"
+      ENABLE_EMBEDDINGS: "true"
+      NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:8000/api
+      NEXT_PUBLIC_DEMO_MODE: "true"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v8.2.0
+        with:
+          enable-cache: true
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/web/package-lock.json
+      - run: npm ci
+      - run: uv sync --locked
+        working-directory: apps/api
+      - run: uv run alembic upgrade head
+        working-directory: apps/api
+      - run: uv run python -m app.jobs.import_csv --file ../../data/sample/procurement_sample.csv --source sample
+        working-directory: apps/api
+      - run: uv run python -m app.jobs.generate_embeddings --limit 1000
+        working-directory: apps/api
+      - run: npm --prefix apps/web ci
+      - run: npm run web:build
+      - run: npx playwright install --with-deps chromium
+      - name: Start API
+        working-directory: apps/api
+        run: uv run uvicorn app.main:app --port 8000 &
+      - name: Start web
+        working-directory: apps/web
+        run: npm start &
+      - name: Wait for API and web
+        run: |
+          for i in $(seq 1 60); do
+            api_ok=$(curl -sf http://127.0.0.1:8000/api/health || true)
+            web_ok=$(curl -sf -o /dev/null -w "%{http_code}" http://127.0.0.1:3000 || true)
+            if [ -n "$api_ok" ] && [ "$web_ok" = "200" ]; then
+              echo "api: $api_ok"; echo "web: $web_ok"; exit 0
+            fi
+            sleep 2
+          done
+          echo "Services did not become ready"; exit 1
+      - run: npm run e2e:smoke
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-e2e-artifacts
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
