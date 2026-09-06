@@ -197,7 +197,7 @@ npm run web:lint
 npm run web:build
 ```
 
-GitHub Actions runs API tests, migration checks, official-snapshot evaluation, repository guardrails, web tests, lint, and production build on every push and pull request.
+GitHub Actions runs API tests, migration checks, official-snapshot evaluation, repository guardrails, web tests, lint, and production build on every push and pull request. A separate E2E job boots the full stack (PostgreSQL service, seeded synthetic sample, FastAPI, production web build) and runs the Playwright procurement smoke workflow with mock LLM and no API keys.
 
 ## Optional deployment
 
