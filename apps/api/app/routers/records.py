@@ -39,6 +39,8 @@ def list_records(
     session: Session = Depends(get_session),
 ) -> RecordsResponse:
     q = q.strip() if q is not None else None
+    if q and len(q) > 1000:
+        raise HTTPException(status_code=422, detail="Search query exceeds 1000 characters")
     filters = {
         "q": q,
         "province": province,
