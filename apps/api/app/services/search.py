@@ -73,7 +73,7 @@ def normalize_assistant_query(question: str) -> str:
 
 def apply_filters(stmt: Select, filters: dict[str, Any]) -> Select:
     clauses = [ProcurementRecord.dataset_type == get_settings().dataset_mode]
-    if q := str(filters.get("q") or "").strip():
+    if q := normalize_retrieval_terms(str(filters.get("q") or "")):
         text_fields = (
             ProcurementRecord.project_name,
             ProcurementRecord.agency_name,
