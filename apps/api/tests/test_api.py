@@ -281,3 +281,44 @@ def test_record_facets_exclude_records_in_inactive_dataset(client: TestClient, s
     assert response.status_code == 200
     assert "Surin" not in response.json()["provinces"]
     assert "Official only" not in response.json()["categories"]
+
+
+
+@pytest.mark.parametrize("mode", ["semantic", "hybrid"])
+def test_ranked_modes_reject_unimplemented_page_two(client: TestClient, session: Session, mode: str):
+    seed(session)
+    response = client.get("/api/records", params={
+        "q": "cybersecurity", "search_mode": mode, "page": 2,
+    })
+    assert response.status_code == 422
+    assert "pagination" in response.json()["detail"].lower()
+
+
+def test_local_semantic_routes_do_not_return_unrelated_hash_collisions(
+    client: TestClient, session: Session
+):
+    seed(session)
+    question = "ดาวเทียมสำรวจอวกาศ"
+    post = client.post("/api/search/semantic", json={"query": question, "limit": 5})
+    get = client.get("/api/records", params={
+        "search_mode": "semantic", "q": question,
+    })
+    assert post.status_code == 200
+    assert post.json() == []
+    assert get.status_code == 200
+    assert get.json()["items"] == []
+    assert get.json()["total"] == 0
+
+
+def test_local_semantic_search_preserves_supported_keyword_evidence(
+    client: TestClient, session: Session
+):
+    seed(session)
+    post = client.post("/api/search/semantic", json={"query": "cybersecurity"})
+    get = client.get("/api/records", params={
+        "search_mode": "semantic", "q": "cybersecurity",
+    })
+    assert post.status_code == get.status_code == 200
+    assert len(post.json()) == get.json()["total"] == 1
+    assert post.json()[0]["procurement_category"] == "IT"
+    assert get.json()["items"][0]["procurement_category"] == "IT"
