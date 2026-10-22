@@ -39,7 +39,7 @@ def consume_hourly_budget(session: Session, *, limit: int, now: datetime | None 
 
 def protect_external_inference(session: Session, provider: LLMProvider, settings: Settings) -> LLMProvider:
     """Fall back to offline responses when the shared external budget is exhausted."""
-    if not settings.enable_llm or not provider.is_external:
+    if not settings.enable_llm or not provider.may_call_external:
         return provider
     try:
         if consume_hourly_budget(session, limit=settings.ai_hourly_request_limit):
