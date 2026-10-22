@@ -50,21 +50,21 @@ def test_hybrid_rank_fusion_is_not_dominated_by_keyword_score_magnitude(session:
         [
             ProcurementEmbedding(
                 procurement_id=keyword_heavy.id,
-                embedding_model="fixture",
+                embedding_model="hashing-token-v1",
                 embedding=[0.0, 1.0],
                 embedded_text=keyword_heavy.project_name,
                 text_hash="a" * 64,
             ),
             ProcurementEmbedding(
                 procurement_id=balanced.id,
-                embedding_model="fixture",
+                embedding_model="hashing-token-v1",
                 embedding=[1.0, 0.0],
                 embedded_text=balanced.project_name,
                 text_hash="b" * 64,
             ),
             ProcurementEmbedding(
                 procurement_id=semantic_only.id,
-                embedding_model="fixture",
+                embedding_model="hashing-token-v1",
                 embedding=[0.8, 0.6],
                 embedded_text=semantic_only.project_name,
                 text_hash="c" * 64,
@@ -189,7 +189,9 @@ def test_hash_embedding_cannot_create_unrelated_hybrid_matches(session: Session)
     assert hybrid_candidates(session, query, hash_embedding(query)) == []
 
 
-def test_real_semantic_embedding_candidates_are_not_unconditionally_removed(session: Session):
+def test_mixed_embedding_models_cannot_create_hash_query_false_positives(session: Session):
+    from app.services.search import semantic_candidates
+
     record = _record("semantic-only", "fully unrelated literal terms")
     session.add(record)
     session.flush()
@@ -204,9 +206,37 @@ def test_real_semantic_embedding_candidates_are_not_unconditionally_removed(sess
     )
     session.commit()
 
-    matches = hybrid_candidates(session, "semantic query", [1.0, 0.0], limit=2)
-    assert [item.record.source_record_id for item in matches] == ["semantic-only"]
+    # The public hybrid path has a local-hash query vector; it cannot rank a
+    # real-model embedding from a different vector space.
+    assert hybrid_candidates(session, "semantic query", [1.0, 0.0], limit=2) == []
+    assert semantic_candidates(session, [1.0, 0.0]) == []
 
+    # A future matching query encoder may intentionally select its own model.
+    matching = semantic_candidates(
+        session, [1.0, 0.0], embedding_model="real-model-fixture",
+    )
+    assert [item.record.source_record_id for item in matching] == ["semantic-only"]
+
+
+def test_semantic_ranking_rejects_incompatible_vector_dimensions(session: Session):
+    from app.services.search import semantic_candidates
+
+    record = _record("mismatch", "alpha beta")
+    session.add(record)
+    session.flush()
+    session.add(
+        ProcurementEmbedding(
+            procurement_id=record.id,
+            embedding_model="hashing-token-v1",
+            embedding=[1.0, 0.0],
+            embedded_text=record.project_name,
+            text_hash="d" * 64,
+        )
+    )
+    session.commit()
+
+    assert semantic_candidates(session, [1.0, 0.0, 0.0]) == []
+    assert hybrid_candidates(session, "absent term", [1.0, 0.0, 0.0]) == []
 
 
 def test_keyword_filter_treats_sql_wildcards_as_literal_text(session: Session):
