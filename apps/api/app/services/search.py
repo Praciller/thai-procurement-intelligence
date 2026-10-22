@@ -71,6 +71,12 @@ def normalize_assistant_query(question: str) -> str:
     return " ".join(normalized.split())
 
 
+def _contains_literal(column: Any, text: str) -> Any:
+    """SQL LIKE escaping: search user-entered percent/underscore as literals."""
+    escaped = text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return column.ilike(f"%{escaped}%", escape="\\")
+
+
 def apply_filters(stmt: Select, filters: dict[str, Any]) -> Select:
     clauses = [ProcurementRecord.dataset_type == get_settings().dataset_mode]
     if q := normalize_retrieval_terms(str(filters.get("q") or "")):
@@ -81,16 +87,14 @@ def apply_filters(stmt: Select, filters: dict[str, Any]) -> Select:
             ProcurementRecord.normalized_text,
         )
         tokens = [token for token in tokenize(q) if len(token) >= 2]
-        phrase_like = f"%{q}%"
-        token_clauses = [field.ilike(phrase_like) for field in text_fields]
+        token_clauses = [_contains_literal(field, q) for field in text_fields]
         for token in tokens:
-            like = f"%{token}%"
-            token_clauses.extend(field.ilike(like) for field in text_fields)
+            token_clauses.extend(_contains_literal(field, token) for field in text_fields)
         clauses.append(or_(*token_clauses))
     if province := filters.get("province"):
         clauses.append(ProcurementRecord.province == province)
     if agency := filters.get("agency"):
-        clauses.append(ProcurementRecord.agency_name.ilike(f"%{agency}%"))
+        clauses.append(_contains_literal(ProcurementRecord.agency_name, agency))
     if category := filters.get("category"):
         clauses.append(ProcurementRecord.procurement_category == category)
     if method := filters.get("method"):
