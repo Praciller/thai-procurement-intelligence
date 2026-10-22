@@ -25,6 +25,8 @@ class Settings(BaseSettings):
         "../../reports/official_snapshot/data_quality_summary.json", alias="OFFICIAL_QUALITY_REPORT"
     )
     enable_llm: bool = Field(False, alias="ENABLE_LLM")
+    ai_hourly_request_limit: int = Field(30, alias="AI_HOURLY_REQUEST_LIMIT", ge=0, le=10000)
+    log_ai_queries: bool = Field(False, alias="LOG_AI_QUERIES")
     llm_provider: str | None = Field(None, alias="LLM_PROVIDER")
     llm_provider_chain: str = Field("gemini,groq,openrouter,mock", alias="LLM_PROVIDER_CHAIN")
     llm_timeout_seconds: float = Field(12.0, alias="LLM_TIMEOUT_SECONDS", gt=0, le=60)
