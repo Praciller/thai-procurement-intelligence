@@ -1,8 +1,16 @@
 name: CI
 
 on:
+  # Run once for each PR update; run main once after a merge.
+  # Avoid running the full E2E browser installation on both branch push and PR.
   push:
+    branches: [main]
   pull_request:
+
+concurrency:
+  # A superseding commit on the same PR cancels old CI, not unrelated PRs.
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   api:
@@ -38,7 +46,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: review-snapshot
-          path: .
+          # Export only generated QA evidence; do not archive the entire repo.
+          path: |
+            reports/official_snapshot/
+            evals/retrieval/official_snapshot_judgments.json
           if-no-files-found: error
           retention-days: 1
 
@@ -61,6 +72,9 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    # The Chromium setup occasionally stalls; surface a failed check instead
+    # of leaving a PR job running indefinitely.
+    timeout-minutes: 25
     services:
       db:
         image: postgres:16-alpine
