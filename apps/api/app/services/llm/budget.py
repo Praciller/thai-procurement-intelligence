@@ -32,9 +32,12 @@ def consume_hourly_budget(session: Session, *, limit: int, now: datetime | None 
         set_={"requests": AIHourlyBudget.requests + 1},
         where=AIHourlyBudget.requests < limit,
     )
-    updated = session.execute(stmt).rowcount
+    # psycopg can report rowcount=-1 for PostgreSQL INSERT .. ON CONFLICT
+    # without RETURNING, even though the write succeeded and was committed.
+    # RETURNING is supported by both PostgreSQL and our supported SQLite.
+    reserved = session.execute(stmt.returning(AIHourlyBudget.requests)).scalar_one_or_none()
     session.commit()
-    return updated == 1
+    return reserved is not None
 
 
 def protect_external_inference(session: Session, provider: LLMProvider, settings: Settings) -> LLMProvider:
