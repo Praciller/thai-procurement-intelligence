@@ -4,6 +4,7 @@ import type {
   DatasetStatus,
   IngestionRun,
   ProcurementRecord,
+  RecordFacets,
   RecordsResponse,
   SummaryResponse,
 } from "@/types/api";
@@ -85,6 +86,10 @@ export function getRecords(query = "") {
 /** Client-side searches must not treat an unavailable API as an empty result set. */
 export function searchRecords(query = "") {
   return apiFetch<RecordsResponse>(`/records${query}`, { cache: "no-store" });
+}
+
+export function getRecordFacets() {
+  return safeApiFetch<RecordFacets>("/records/facets", { provinces: [], categories: [] }, { cache: "no-store" });
 }
 
 export function getRecord(id: string) {
