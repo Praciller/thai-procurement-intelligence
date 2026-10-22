@@ -179,3 +179,43 @@ def test_keyword_search_pagination(client: TestClient, session: Session):
     assert first.status_code == second.status_code == 200
     assert first.json()["total"] == second.json()["total"] == 2
     assert first.json()["items"][0]["id"] != second.json()["items"][0]["id"]
+
+
+
+def test_record_facets_cover_entire_active_dataset_not_just_first_page(client: TestClient, session: Session):
+    seed(session)
+    first_page = client.get("/api/records", params={"page_size": 1})
+    facets = client.get("/api/records/facets")
+
+    assert first_page.status_code == facets.status_code == 200
+    assert len(first_page.json()["items"]) == 1
+    assert facets.json() == {
+        "provinces": ["Bangkok", "Chiang Mai"],
+        "categories": ["Construction", "IT"],
+    }
+
+
+def test_record_facets_exclude_records_in_inactive_dataset(client: TestClient, session: Session):
+    seed(session)
+    import_rows(
+        session,
+        [{
+            "source_record_id": "OFF-1",
+            "project_name": "Official evidence",
+            "agency_name": "Official agency",
+            "province": "Surin",
+            "procurement_category": "Official only",
+            "source_url": "https://data.go.th/dataset/example",
+            "source_snapshot_id": "fixture",
+            "source_license": "Creative Commons Attribution",
+            "source_checksum": "a" * 64,
+            "mapping_version": "v1",
+        }],
+        "official",
+        dataset_type="official_snapshot",
+    )
+
+    response = client.get("/api/records/facets")
+    assert response.status_code == 200
+    assert "Surin" not in response.json()["provinces"]
+    assert "Official only" not in response.json()["categories"]
