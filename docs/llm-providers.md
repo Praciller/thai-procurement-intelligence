@@ -37,7 +37,7 @@ The deterministic hash embedding used elsewhere in this project remains a zero-c
 
 ## Shared inference budget and privacy defaults
 
-External inference remains opt-in with `ENABLE_LLM=true`. Every non-cached request that could reach an external provider reserves one global UTC-hour permit in the database. This counter is shared across PostgreSQL or SQLite app instances and updated atomically. The default `AI_HOURLY_REQUEST_LIMIT=30`; setting it to `0` disables external inference. When the budget is exhausted or unavailable, the API returns deterministic offline answers instead of calling another external model. A no-evidence answer or a cached summary never consumes the budget.
+External inference remains opt-in with `ENABLE_LLM=true`. Every non-cached request that could reach an external provider reserves one global UTC-hour permit in the database. This counter is shared across PostgreSQL or SQLite app instances and updated atomically. A single permitted request can still make multiple provider attempts due to retries and failover; the cap does not count individual provider calls. The default `AI_HOURLY_REQUEST_LIMIT=30`; setting it to `0` disables external inference. When the budget is exhausted or unavailable, the API returns deterministic offline answers instead of calling another external model. A no-evidence answer or a cached summary never consumes the budget.
 
 This is a **global inference-cost safeguard**, not per-user authentication or comprehensive DDoS protection. Protect the public API separately with edge rate limiting and/or authentication as traffic grows.
 
