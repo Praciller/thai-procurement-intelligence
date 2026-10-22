@@ -11,6 +11,8 @@ const dictionaries = {
       product: "Thai Procurement Intelligence",
       subtitle: "Bilingual public-data evidence platform",
       languageLabel: "Language",
+      primaryNavigation: "Primary navigation",
+      skipToContent: "Skip to main content",
       nav: {
         home: "Home",
         search: "Search",
@@ -235,6 +237,8 @@ const dictionaries = {
       product: "Thai Procurement Intelligence",
       subtitle: "แพลตฟอร์มหลักฐานข้อมูลสาธารณะสองภาษา",
       languageLabel: "ภาษา",
+      primaryNavigation: "เมนูหลัก",
+      skipToContent: "ข้ามไปยังเนื้อหาหลัก",
       nav: {
         home: "หน้าแรก",
         search: "ค้นหา",
