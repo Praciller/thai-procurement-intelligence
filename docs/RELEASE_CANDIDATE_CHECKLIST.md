@@ -42,3 +42,18 @@ The base branch of every stacked PR must point to its immediate predecessor unti
 ## Known limitations
 
 Local hash-based vectors are not validated Thai-language semantic embeddings. Ranked semantic/hybrid pagination is not implemented beyond the first page; unsupported pages must produce a clear error. The official snapshot is deliberately limited and should not be presented as a complete view of Thai public procurement.
+
+## Isolated PostgreSQL 16 rehearsal evidence (2026-10-23)
+
+The following was executed locally using a **disposable PostgreSQL 16 Alpine Docker container** and a temporary Git checkout; it was not run against production:
+
+- Reproduced the original failure: an import script at Alembic revision `0002` invoked ORM `create_all`, prematurely creating the `ai_hourly_budget` table. The original `0003` migration then failed with PostgreSQL `DuplicateTable`.
+- Updated startup/import/embedding/summarization so only explicit Alembic migrations manage runtime schema.
+- Confirmed migration `0002 → 0003` can adopt an already-existing **structurally identical** budget table without dropping data, and rejects a mismatched table.
+- Confirmed a second clean database can import 120 records at revision `0002` without creating the future budget table, then upgrade successfully to `0003` and retain all 120 records.
+- Verified a repeated `alembic upgrade head` completes without schema changes.
+- Reproduced psycopg returning `rowcount=-1` for `INSERT .. ON CONFLICT`; switched permit detection to SQL `RETURNING`.
+- With 24 concurrent PostgreSQL permit requests and a limit of 5, exactly 5 succeeded, 19 were denied and the database stored 5.
+- Python regression suite: 104 passed, Ruff passed. CI additionally now includes a PostgreSQL migration-before-browser check and quota concurrency check.
+
+**Still required before production:** identify the actual production PostgreSQL version, verify a restorable backup and migration privileges, inspect migration differences on a replica, and obtain explicit deploy authorization. The rehearsal does not establish production readiness by itself.
