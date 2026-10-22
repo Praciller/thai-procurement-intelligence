@@ -8,6 +8,7 @@ from app.models import AISummary, ProcurementRecord
 from app.schemas import ProcurementRecordDetail, RecordsResponse, SearchMode, SemanticSearchRequest, SummaryResponse
 from app.services.embeddings import ensure_embedding, hash_embedding
 from app.services.llm.factory import get_llm_provider
+from app.services.llm.budget import protect_external_inference
 from app.services.search import hybrid_candidates, keyword_candidates, search_records, semantic_candidates
 
 router = APIRouter(prefix="/records", tags=["records"])
@@ -124,6 +125,25 @@ async def summarize_record(record_id: str, session: Session = Depends(get_sessio
             summary_text=cached.summary_text,
             cached=True,
         )
+    provider = protect_external_inference(session, provider, settings)
+    # On budget exhaustion, prefer a cached deterministic fallback if available.
+    if provider.provider_name == "mock":
+        fallback_cache = session.scalar(
+            select(AISummary).where(
+                AISummary.procurement_id == record.id,
+                AISummary.provider == provider.provider_name,
+                AISummary.model == provider.model_name,
+                AISummary.prompt_version == prompt_version,
+            )
+        )
+        if fallback_cache:
+            return SummaryResponse(
+                procurement_id=record.id,
+                provider=fallback_cache.provider,
+                model=fallback_cache.model,
+                summary_text=fallback_cache.summary_text,
+                cached=True,
+            )
     summary_text = await provider.generate_summary(record)
     summary = AISummary(
         procurement_id=record.id,
