@@ -112,6 +112,7 @@ export function RecordsClient({ initialRecords, locale = "en" }: { initialRecord
                   key={item}
                   className={`min-h-9 rounded px-2 text-xs font-medium capitalize ${mode === item ? "bg-accent text-background" : "text-muted hover:bg-surface"}`}
                   onClick={() => setMode(item)}
+                  aria-pressed={mode === item}
                   type="button"
                 >
                   {text.modeLabels[item]}
