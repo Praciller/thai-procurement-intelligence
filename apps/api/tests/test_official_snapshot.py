@@ -233,10 +233,12 @@ def test_dataset_status_falls_back_to_imported_official_records(
 
     assert response.status_code == 200
     assert response.json()["source"]["snapshot_id"] == "fixture"
-    assert response.json()["source"]["record_count_raw"] == 1
+    assert response.json()["source"]["persisted_record_count"] == 1
+    assert response.json()["source"]["record_count_raw"] is None
     assert response.json()["quality"]["checksum_verified"] is False
     assert response.json()["quality"]["stored_provenance_consistent"] is True
-    assert response.json()["quality"]["valid_records"] == 1
+    assert response.json()["quality"]["valid_records"] is None
+    assert response.json()["quality"]["rejected_records"] is None
     get_settings.cache_clear()
 
 

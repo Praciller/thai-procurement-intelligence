@@ -40,9 +40,14 @@ def test_missing_quality_artifact_never_claims_verified_source_bytes(
         assert response.status_code == 200
         body = response.json()
         assert body["dataset_mode"] == "official_snapshot"
-        assert body["source"]["record_count_raw"] == 2
+        assert body["source"]["record_count_raw"] is None
+        assert body["source"]["persisted_record_count"] == 2
         assert body["quality"]["checksum_verified"] is False
         assert body["quality"]["stored_provenance_consistent"] is same_checksum
+        assert body["quality"]["valid_records"] is None
+        assert body["quality"]["rejected_records"] is None
+        assert body["quality"]["duplicate_records"] is None
+        assert ("agree" if same_checksum else "disagree") in body["quality"]["verification_note"]
         assert "not rehashed" in body["quality"]["verification_note"]
     finally:
         get_settings.cache_clear()
