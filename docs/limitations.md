@@ -10,3 +10,6 @@
 - Generated summaries are labeled, evidence-constrained, and require human verification against the official source.
 - Public procurement data is not proof of fraud, corruption, misconduct, or suspicious behavior.
 - The optional hosted deployment was verified on 2026-08-24 in `official_snapshot` mode with 250 records; hosted state must be re-verified after future deployments or database lifecycle events.
+
+- If bundled snapshot quality evidence is unavailable, Data Status falls back to database-record metadata. Matching stored checksum fields only establish metadata consistency; they are **not** reported as a verified checksum of the original CSV bytes. Missing historical rejection/duplicate counts remain unknown.
+- Summary caches are keyed to source-content fingerprints and a versioned prompt. The initial model of the selected provider chain is used for cache lookup; results produced by a different fallback or dynamic model may require another inference call.
