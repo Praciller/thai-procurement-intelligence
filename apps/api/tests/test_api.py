@@ -156,3 +156,26 @@ def test_records_semantic_mode_treats_whitespace_as_no_query(client: TestClient,
     data = response.json()
     assert data["total"] == 2
     assert all(item["relevance_score"] is None for item in data["items"])
+
+
+@pytest.mark.parametrize("endpoint,payload", [
+    ("/api/assistant/ask", {"question": "a" * 1001}),
+    ("/api/search/semantic", {"query": "a" * 1001}),
+])
+def test_text_search_endpoints_reject_oversized_input(client: TestClient, endpoint: str, payload: dict):
+    response = client.post(endpoint, json=payload)
+    assert response.status_code == 422
+
+
+def test_records_reject_oversized_query(client: TestClient):
+    response = client.get("/api/records", params={"q": "a" * 1001})
+    assert response.status_code == 422
+
+
+def test_keyword_search_pagination(client: TestClient, session: Session):
+    seed(session)
+    first = client.get("/api/records", params={"page": 1, "page_size": 1})
+    second = client.get("/api/records", params={"page": 2, "page_size": 1})
+    assert first.status_code == second.status_code == 200
+    assert first.json()["total"] == second.json()["total"] == 2
+    assert first.json()["items"][0]["id"] != second.json()["items"][0]["id"]
