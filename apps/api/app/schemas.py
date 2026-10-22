@@ -47,6 +47,11 @@ class ProcurementRecordDetail(ProcurementRecordListItem):
     ai_summary: str | None = None
 
 
+class RecordFacets(BaseModel):
+    provinces: list[str]
+    categories: list[str]
+
+
 class RecordsResponse(BaseModel):
     items: list[ProcurementRecordListItem]
     total: int
