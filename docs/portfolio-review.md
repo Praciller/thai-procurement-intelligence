@@ -47,7 +47,7 @@ Start with [local_review.md](local_review.md). It requires no hosted inference s
 
 - The hosted demo was verified on 2026-08-24 in `official_snapshot` mode with 250 records; treat the readiness and Data Status views as the source of truth if hosted state later changes.
 - The local official mode is a bounded non-random snapshot, not complete or representative evidence.
-- Local deterministic embeddings are a no-cost semantic demo, not production-grade vector embeddings; the judged benchmark currently shows no aggregate relevance gain over keyword retrieval and exposes false positives on the negative control.
+- Local deterministic embeddings are a no-cost semantic demo, not production-grade vector embeddings; the eight-query judged benchmark has identical aggregate keyword/hybrid scores after deterministic Thai synonym handling and a lexical-evidence gate for hashing vectors. The single negative control now returns no hybrid results; unseen-query behavior and true semantic recall remain unproven.
 - Public ingestion is disabled by default and requires a server-side token.
 - Public data is not proof of wrongdoing.
 - Any credential exposed through public history, screenshots, chat, or logs must be rotated.

@@ -32,6 +32,11 @@ export type ProcurementRecord = {
   relevance_score?: number | null;
 };
 
+export type RecordFacets = {
+  provinces: string[];
+  categories: string[];
+};
+
 export type RecordsResponse = {
   items: ProcurementRecord[];
   total: number;
@@ -108,10 +113,12 @@ export type DatasetStatus = {
   };
   quality: null | {
     valid_records: number;
-    rejected_records: number;
-    duplicate_records: number;
+    rejected_records: number | null;
+    duplicate_records: number | null;
     warning_records?: number;
     checksum_verified?: boolean;
+    provenance_consistent?: boolean;
+    verification_method?: string;
   };
   latest_run: IngestionRun | null;
 };

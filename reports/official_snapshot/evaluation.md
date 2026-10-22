@@ -7,16 +7,16 @@ Measured locally from the committed bounded official snapshot.
 - **Judged Query Count:** 8
 - **Positive Query Count:** 7
 - **Negative Query Count:** 1
-- **Keyword Mean Precision At 5:** 0.7714
-- **Keyword Mean Recall At 5:** 0.4929
-- **Keyword Mean Ndcg At 5:** 0.8571
-- **Keyword Mean Mrr:** 0.8571
+- **Keyword Mean Precision At 5:** 0.9143
+- **Keyword Mean Recall At 5:** 0.5949
+- **Keyword Mean Ndcg At 5:** 1.0
+- **Keyword Mean Mrr:** 1.0
 - **Keyword Negative False Positive Count:** 0
-- **Hybrid Mean Precision At 5:** 0.7714
-- **Hybrid Mean Recall At 5:** 0.4929
-- **Hybrid Mean Ndcg At 5:** 0.8571
-- **Hybrid Mean Mrr:** 0.8571
-- **Hybrid Negative False Positive Count:** 5
+- **Hybrid Mean Precision At 5:** 0.9143
+- **Hybrid Mean Recall At 5:** 0.5949
+- **Hybrid Mean Ndcg At 5:** 1.0
+- **Hybrid Mean Mrr:** 1.0
+- **Hybrid Negative False Positive Count:** 0
 - **Citation Completeness:** 1.0
 - **Source Link Completeness:** 1.0
 - **Forbidden Claim Term Rate:** 0.0

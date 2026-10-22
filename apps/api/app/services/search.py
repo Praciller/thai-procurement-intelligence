@@ -19,6 +19,18 @@ RRF_K = 60
 KEYWORD_WEIGHT = 0.55
 SEMANTIC_WEIGHT = 0.45
 MIN_THAI_FUZZY_SCORE = 0.30
+LOCAL_HASH_EMBEDDING_MODEL = "hashing-token-v1"
+# Explicitly reviewed domain aliases; expand *only* the retrieval query,
+# not stored evidence or the question passed to the answer generator.
+RETRIEVAL_ALIASES = (("มอเตอร์ไซค์", "รถจักรยานยนต์"),)
+
+
+def normalize_retrieval_terms(query: str) -> str:
+    normalized = query.strip()
+    for alias, canonical in RETRIEVAL_ALIASES:
+        normalized = normalized.replace(alias, canonical)
+    return normalized
+
 ASSISTANT_QUERY_STOP_PHRASES = (
     "จากข้อมูลที่ให้เท่านั้น",
     "จากข้อมูลที่ค้นพบ",
@@ -61,7 +73,7 @@ def normalize_assistant_query(question: str) -> str:
 
 def apply_filters(stmt: Select, filters: dict[str, Any]) -> Select:
     clauses = [ProcurementRecord.dataset_type == get_settings().dataset_mode]
-    if q := str(filters.get("q") or "").strip():
+    if q := normalize_retrieval_terms(str(filters.get("q") or "")):
         text_fields = (
             ProcurementRecord.project_name,
             ProcurementRecord.agency_name,
@@ -133,7 +145,7 @@ def keyword_candidates(
     limit: int = 8,
     filters: dict[str, Any] | None = None,
 ) -> list[SearchResult]:
-    query = query.strip()
+    query = normalize_retrieval_terms(query)
     if not query:
         return []
     structured_filters = {key: value for key, value in (filters or {}).items() if key != "q"}
@@ -204,8 +216,17 @@ def hybrid_candidates(
     by_id: dict[str, SearchResult] = {}
     for rank, result in enumerate(keyword_candidates(session, query, limit=limit, filters=filters), start=1):
         by_id[result.record.id] = SearchResult(record=result.record, score=_rrf_score(rank, KEYWORD_WEIGHT))
+    keyword_ids = set(by_id)
     if query_embedding:
         for rank, result in enumerate(semantic_candidates(session, query_embedding, limit=limit, filters=filters), start=1):
+            # Hashing-token vectors are not semantic evidence: their collisions
+            # must not introduce unrelated records absent from lexical search.
+            # Real embedding models can still contribute semantic-only results.
+            if result.record.id not in keyword_ids and all(
+                embedded.embedding_model == LOCAL_HASH_EMBEDDING_MODEL
+                for embedded in result.record.embeddings
+            ):
+                continue
             contribution = _rrf_score(rank, SEMANTIC_WEIGHT)
             existing = by_id.get(result.record.id)
             if existing:

@@ -148,3 +148,61 @@ def test_min_budget_zero_is_not_treated_as_missing(session: Session):
 
     assert total == 2
     assert {item.record.source_record_id for item in results} == {"zero", "paid"}
+
+
+
+def test_colloquial_motorcycle_alias_retrieves_motorcycle_not_computer(session: Session):
+    session.add_all([
+        _record("moto", "ซ่อมรถจักรยานยนต์"),
+        _record("computer", "ซ่อมคอมพิวเตอร์"),
+    ])
+    session.commit()
+
+    results = keyword_candidates(session, "ซ่อมมอเตอร์ไซค์", limit=2)
+    assert results
+    assert results[0].record.source_record_id == "moto"
+
+    filtered, count = search_records(session, {"q": "มอเตอร์ไซค์"})
+    assert count == 1
+    assert filtered[0].record.source_record_id == "moto"
+
+
+def test_hash_embedding_cannot_create_unrelated_hybrid_matches(session: Session):
+    from app.services.embeddings import MOCK_EMBEDDING_MODEL, hash_embedding
+
+    record = _record("unrelated", "ซื้อวัสดุคอมพิวเตอร์")
+    session.add(record)
+    session.flush()
+    session.add(
+        ProcurementEmbedding(
+            procurement_id=record.id,
+            embedding_model=MOCK_EMBEDDING_MODEL,
+            embedding=hash_embedding(record.project_name),
+            embedded_text=record.project_name,
+            text_hash="a" * 64,
+        )
+    )
+    session.commit()
+
+    query = "ดาวเทียมสำรวจอวกาศ"
+    assert keyword_candidates(session, query) == []
+    assert hybrid_candidates(session, query, hash_embedding(query)) == []
+
+
+def test_real_semantic_embedding_candidates_are_not_unconditionally_removed(session: Session):
+    record = _record("semantic-only", "fully unrelated literal terms")
+    session.add(record)
+    session.flush()
+    session.add(
+        ProcurementEmbedding(
+            procurement_id=record.id,
+            embedding_model="real-model-fixture",
+            embedding=[1.0, 0.0],
+            embedded_text=record.project_name,
+            text_hash="f" * 64,
+        )
+    )
+    session.commit()
+
+    matches = hybrid_candidates(session, "semantic query", [1.0, 0.0], limit=2)
+    assert [item.record.source_record_id for item in matches] == ["semantic-only"]

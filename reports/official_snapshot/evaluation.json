@@ -4,16 +4,16 @@
   "judged_query_count": 8,
   "positive_query_count": 7,
   "negative_query_count": 1,
-  "keyword_mean_precision_at_5": 0.7714,
-  "keyword_mean_recall_at_5": 0.4929,
-  "keyword_mean_ndcg_at_5": 0.8571,
-  "keyword_mean_mrr": 0.8571,
+  "keyword_mean_precision_at_5": 0.9143,
+  "keyword_mean_recall_at_5": 0.5949,
+  "keyword_mean_ndcg_at_5": 1.0,
+  "keyword_mean_mrr": 1.0,
   "keyword_negative_false_positive_count": 0,
-  "hybrid_mean_precision_at_5": 0.7714,
-  "hybrid_mean_recall_at_5": 0.4929,
-  "hybrid_mean_ndcg_at_5": 0.8571,
-  "hybrid_mean_mrr": 0.8571,
-  "hybrid_negative_false_positive_count": 5,
+  "hybrid_mean_precision_at_5": 0.9143,
+  "hybrid_mean_recall_at_5": 0.5949,
+  "hybrid_mean_ndcg_at_5": 1.0,
+  "hybrid_mean_mrr": 1.0,
+  "hybrid_negative_false_positive_count": 0,
   "citation_completeness": 1.0,
   "source_link_completeness": 1.0,
   "forbidden_claim_term_rate": 0.0,
@@ -248,33 +248,33 @@
       "relevance_rule": "Manual intent judgment: colloquial motorcycle-repair wording maps to the same motorcycle-repair records.",
       "relevant_count": 7,
       "keyword_ranked_source_record_ids": [
-        "68019547010",
-        "68059453523",
-        "68069590790",
-        "68079436929",
-        "68079449765"
+        "67129177126",
+        "68099004454",
+        "68019308874",
+        "68019316644",
+        "68099337644"
       ],
       "hybrid_ranked_source_record_ids": [
-        "68059453523",
-        "68019547010",
-        "68069590790",
-        "68079436929",
-        "68079449765"
+        "68099004454",
+        "67129177126",
+        "68019308874",
+        "68019316644",
+        "68099337644"
       ],
       "keyword": {
-        "precision_at_k": 0.0,
-        "recall_at_k": 0.0,
-        "ndcg_at_k": 0.0,
-        "mrr": 0.0,
-        "false_positive_count": 5,
+        "precision_at_k": 1.0,
+        "recall_at_k": 0.7142857142857143,
+        "ndcg_at_k": 1.0,
+        "mrr": 1.0,
+        "false_positive_count": 0,
         "eligible_for_relevance_average": true
       },
       "hybrid": {
-        "precision_at_k": 0.0,
-        "recall_at_k": 0.0,
-        "ndcg_at_k": 0.0,
-        "mrr": 0.0,
-        "false_positive_count": 5,
+        "precision_at_k": 1.0,
+        "recall_at_k": 0.7142857142857143,
+        "ndcg_at_k": 1.0,
+        "mrr": 1.0,
+        "false_positive_count": 0,
         "eligible_for_relevance_average": true
       }
     },
@@ -284,13 +284,7 @@
       "relevance_rule": "Negative control: no project in the bounded snapshot is about satellites or space exploration.",
       "relevant_count": 0,
       "keyword_ranked_source_record_ids": [],
-      "hybrid_ranked_source_record_ids": [
-        "68019226648",
-        "68039494103",
-        "68019134999",
-        "68039160546",
-        "68099517815"
-      ],
+      "hybrid_ranked_source_record_ids": [],
       "keyword": {
         "precision_at_k": null,
         "recall_at_k": null,
@@ -304,7 +298,7 @@
         "recall_at_k": null,
         "ndcg_at_k": null,
         "mrr": null,
-        "false_positive_count": 5,
+        "false_positive_count": 0,
         "eligible_for_relevance_average": false
       }
     }

@@ -156,3 +156,128 @@ def test_records_semantic_mode_treats_whitespace_as_no_query(client: TestClient,
     data = response.json()
     assert data["total"] == 2
     assert all(item["relevance_score"] is None for item in data["items"])
+
+
+def test_summary_cache_invalidates_when_record_content_changes(client: TestClient, session: Session):
+    seed(session)
+    record_id = client.get("/api/records?q=cybersecurity").json()["items"][0]["id"]
+    initial = client.post(f"/api/records/{record_id}/summary")
+    assert initial.status_code == 200
+    assert initial.json()["cached"] is False
+
+    record = session.get(ProcurementRecord, record_id)
+    record.content_hash = "b" * 64
+    session.commit()
+
+    # Record details must not surface an outdated summary before regeneration.
+    details = client.get(f"/api/records/{record_id}")
+    assert details.status_code == 200
+    assert details.json()["ai_summary"] is None
+
+    refreshed = client.post(f"/api/records/{record_id}/summary")
+    assert refreshed.status_code == 200
+    assert refreshed.json()["cached"] is False
+    assert client.post(f"/api/records/{record_id}/summary").json()["cached"] is True
+
+
+def test_summary_cache_hits_with_primary_router_provider(client: TestClient, session: Session, monkeypatch: pytest.MonkeyPatch):
+    from app.services.llm.mock import MockLLMProvider
+    from app.services.llm.provider_config import ProviderConfig
+    from app.services.llm.router import ProviderEntry, ProviderRouter
+
+    seed(session)
+    record_id = client.get("/api/records?q=cybersecurity").json()["items"][0]["id"]
+
+    class CountingProvider(MockLLMProvider):
+        provider_name = "fixture-primary"
+        model_name = "fixture-model"
+
+        def __init__(self):
+            self.summary_calls = 0
+
+        async def generate_summary(self, record):
+            self.summary_calls += 1
+            return await super().generate_summary(record)
+
+    provider = CountingProvider()
+    config = ProviderConfig(
+        name="fixture-primary", api_style="mock", base_url=None, api_key_env=None,
+        model="fixture-model", timeout=0, max_retries=0,
+        enabled=True, automatic_fallback_allowed=True, deterministic_evaluation_allowed=True,
+    )
+    monkeypatch.setattr(
+        "app.routers.records.get_llm_provider",
+        lambda settings: ProviderRouter([ProviderEntry(config, provider)]),
+    )
+
+    first = client.post(f"/api/records/{record_id}/summary")
+    second = client.post(f"/api/records/{record_id}/summary")
+
+    assert first.status_code == second.status_code == 200
+    assert first.json()["cached"] is False
+    assert second.json()["cached"] is True
+    assert first.json()["provider"] == "fixture-primary"
+    assert provider.summary_calls == 1
+
+
+@pytest.mark.parametrize("endpoint,payload", [
+    ("/api/assistant/ask", {"question": "a" * 1001}),
+    ("/api/search/semantic", {"query": "a" * 1001}),
+])
+def test_text_search_endpoints_reject_oversized_input(client: TestClient, endpoint: str, payload: dict):
+    response = client.post(endpoint, json=payload)
+    assert response.status_code == 422
+
+
+def test_records_reject_oversized_query(client: TestClient):
+    response = client.get("/api/records", params={"q": "a" * 1001})
+    assert response.status_code == 422
+
+
+def test_keyword_search_pagination(client: TestClient, session: Session):
+    seed(session)
+    first = client.get("/api/records", params={"page": 1, "page_size": 1})
+    second = client.get("/api/records", params={"page": 2, "page_size": 1})
+    assert first.status_code == second.status_code == 200
+    assert first.json()["total"] == second.json()["total"] == 2
+    assert first.json()["items"][0]["id"] != second.json()["items"][0]["id"]
+
+
+
+def test_record_facets_cover_entire_active_dataset_not_just_first_page(client: TestClient, session: Session):
+    seed(session)
+    first_page = client.get("/api/records", params={"page_size": 1})
+    facets = client.get("/api/records/facets")
+
+    assert first_page.status_code == facets.status_code == 200
+    assert len(first_page.json()["items"]) == 1
+    assert facets.json() == {
+        "provinces": ["Bangkok", "Chiang Mai"],
+        "categories": ["Construction", "IT"],
+    }
+
+
+def test_record_facets_exclude_records_in_inactive_dataset(client: TestClient, session: Session):
+    seed(session)
+    import_rows(
+        session,
+        [{
+            "source_record_id": "OFF-1",
+            "project_name": "Official evidence",
+            "agency_name": "Official agency",
+            "province": "Surin",
+            "procurement_category": "Official only",
+            "source_url": "https://data.go.th/dataset/example",
+            "source_snapshot_id": "fixture",
+            "source_license": "Creative Commons Attribution",
+            "source_checksum": "a" * 64,
+            "mapping_version": "v1",
+        }],
+        "official",
+        dataset_type="official_snapshot",
+    )
+
+    response = client.get("/api/records/facets")
+    assert response.status_code == 200
+    assert "Surin" not in response.json()["provinces"]
+    assert "Official only" not in response.json()["categories"]

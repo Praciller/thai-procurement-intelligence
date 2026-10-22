@@ -148,6 +148,16 @@ class IngestionError(Base):
     run: Mapped[IngestionRun] = relationship(back_populates="errors")
 
 
+class AIHourlyBudget(Base):
+    """Global UTC-hour external inference budget, shared by application instances."""
+
+    __tablename__ = "ai_hourly_budget"
+
+    bucket: Mapped[str] = mapped_column(String(80), primary_key=True)
+    window: Mapped[str] = mapped_column(String(10), primary_key=True)
+    requests: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
 class AIQALog(Base):
     __tablename__ = "ai_qa_logs"
 

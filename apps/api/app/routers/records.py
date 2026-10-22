@@ -5,17 +5,27 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.database import get_session
 from app.models import AISummary, ProcurementRecord
-from app.schemas import ProcurementRecordDetail, RecordsResponse, SearchMode, SemanticSearchRequest, SummaryResponse
+from app.schemas import ProcurementRecordDetail, RecordFacets, RecordsResponse, SearchMode, SemanticSearchRequest, SummaryResponse
 from app.services.embeddings import ensure_embedding, hash_embedding
 from app.services.llm.factory import get_llm_provider
+from app.services.llm.budget import protect_external_inference
 from app.services.search import hybrid_candidates, keyword_candidates, search_records, semantic_candidates
 
 router = APIRouter(prefix="/records", tags=["records"])
 semantic_router = APIRouter(prefix="/search", tags=["search"])
+SUMMARY_PROMPT_VERSION = "summary-v2"
+
+
+def _summary_version(record: ProcurementRecord) -> str:
+    # Invalidate cached output whenever imported source content changes.
+    return f"{SUMMARY_PROMPT_VERSION}-{record.content_hash[:16]}"
+
 
 
 def _detail_schema(record: ProcurementRecord) -> ProcurementRecordDetail:
-    latest_summary = record.summaries[0].summary_text if record.summaries else None
+    current = (summary for summary in record.summaries if summary.prompt_version == _summary_version(record))
+    latest = max(current, key=lambda summary: summary.created_at, default=None)
+    latest_summary = latest.summary_text if latest else None
     data = ProcurementRecordDetail.model_validate(record)
     data.ai_summary = latest_summary
     return data
@@ -39,6 +49,8 @@ def list_records(
     session: Session = Depends(get_session),
 ) -> RecordsResponse:
     q = q.strip() if q is not None else None
+    if q and len(q) > 1000:
+        raise HTTPException(status_code=422, detail="Search query exceeds 1000 characters")
     filters = {
         "q": q,
         "province": province,
@@ -73,6 +85,27 @@ def list_records(
     return RecordsResponse(items=items, total=total, page=page, page_size=page_size)
 
 
+@router.get("/facets", response_model=RecordFacets)
+def record_facets(session: Session = Depends(get_session)) -> RecordFacets:
+    """Dataset-wide, not first-page-only filter options."""
+    mode = get_settings().dataset_mode
+
+    def values(column) -> list[str]:
+        return list(
+            session.scalars(
+                select(column)
+                .where(ProcurementRecord.dataset_type == mode, column.is_not(None), column != "")
+                .distinct()
+                .order_by(column)
+            ).all()
+        )
+
+    return RecordFacets(
+        provinces=values(ProcurementRecord.province),
+        categories=values(ProcurementRecord.procurement_category),
+    )
+
+
 @router.get("/{record_id}", response_model=ProcurementRecordDetail)
 def get_record(record_id: str, session: Session = Depends(get_session)) -> ProcurementRecordDetail:
     record = session.get(ProcurementRecord, record_id)
@@ -98,11 +131,13 @@ async def summarize_record(record_id: str, session: Session = Depends(get_sessio
     if not record or record.dataset_type != settings.dataset_mode:
         raise HTTPException(status_code=404, detail="Record not found")
     provider = get_llm_provider(settings)
+    prompt_version = _summary_version(record)
     cached = session.scalar(
         select(AISummary).where(
             AISummary.procurement_id == record.id,
             AISummary.provider == provider.provider_name,
             AISummary.model == provider.model_name,
+            AISummary.prompt_version == prompt_version,
         )
     )
     if cached:
@@ -113,12 +148,32 @@ async def summarize_record(record_id: str, session: Session = Depends(get_sessio
             summary_text=cached.summary_text,
             cached=True,
         )
+    provider = protect_external_inference(session, provider, settings)
+    # On budget exhaustion, prefer a cached deterministic fallback if available.
+    if provider.provider_name == "mock":
+        fallback_cache = session.scalar(
+            select(AISummary).where(
+                AISummary.procurement_id == record.id,
+                AISummary.provider == provider.provider_name,
+                AISummary.model == provider.model_name,
+                AISummary.prompt_version == prompt_version,
+            )
+        )
+        if fallback_cache:
+            return SummaryResponse(
+                procurement_id=record.id,
+                provider=fallback_cache.provider,
+                model=fallback_cache.model,
+                summary_text=fallback_cache.summary_text,
+                cached=True,
+            )
     summary_text = await provider.generate_summary(record)
     summary = AISummary(
         procurement_id=record.id,
         provider=provider.provider_name,
         model=provider.model_name,
         summary_text=summary_text,
+        prompt_version=prompt_version,
     )
     session.add(summary)
     session.commit()
