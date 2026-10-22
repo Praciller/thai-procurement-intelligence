@@ -234,3 +234,42 @@ def hybrid_candidates(
             else:
                 by_id[result.record.id] = SearchResult(record=result.record, score=contribution)
     return sorted(by_id.values(), key=lambda item: (-(item.score or 0), *_stable_record_key(item)))[:limit]
+
+
+def grounded_local_semantic_candidates(
+    session: Session,
+    query: str,
+    query_embedding: list[float],
+    limit: int = 8,
+    filters: dict[str, Any] | None = None,
+) -> list[SearchResult]:
+    """Rerank lexical evidence with local hash vectors, never add hash-only hits.
+
+    Deterministic hashing vectors are not true semantic embeddings and may
+    collide on unrelated texts. Search results must have lexical support until
+    a separately evaluated real semantic embedding pipeline exists.
+    """
+    lexical = keyword_candidates(session, query, limit=limit, filters=filters)
+    if not lexical:
+        return []
+
+    ranked: list[SearchResult] = []
+    for result in lexical:
+        scores = [
+            cosine_similarity(query_embedding, embedding.embedding)
+            for embedding in result.record.embeddings
+            if embedding.embedding_model == LOCAL_HASH_EMBEDDING_MODEL
+            and embedding.embedding is not None
+            and len(embedding.embedding) == len(query_embedding)
+        ]
+        ranked.append(
+            SearchResult(
+                record=result.record,
+                score=max(scores) if scores else result.score,
+                exact_phrase=result.exact_phrase,
+            )
+        )
+    return sorted(
+        ranked,
+        key=lambda item: (-int(item.exact_phrase), -(item.score or 0), *_stable_record_key(item)),
+    )
