@@ -38,7 +38,11 @@ export default async function DataStatusPage({ searchParams }: { searchParams?: 
                 ? dictionary.dataStatus.staleSnapshot
                 : dictionary.common.notAvailable,
           ],
-          [dictionary.dataStatus.checksum, dataset.quality?.checksum_verified ? dictionary.dataStatus.verified : dictionary.common.notAvailable],
+          [dictionary.dataStatus.checksum, dataset.quality?.checksum_verified === true
+              ? dictionary.dataStatus.verified
+              : dataset.quality?.checksum_verified === false
+                ? dictionary.dataStatus.notVerified
+                : dictionary.common.notAvailable],
           [dictionary.dataStatus.mappingVersion, dataset.source?.mapping_version],
         ].map(([label, value]) => (
           <div key={String(label)}>

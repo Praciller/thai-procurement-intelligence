@@ -60,10 +60,14 @@ def _official_record_evidence(session: Session) -> tuple[dict | None, dict | Non
         "mapping_version": record.mapping_version,
     }
     quality = {
-        "checksum_verified": count > 0 and checksum_count == count and distinct_checksums == 1,
+        # Consistent stored provenance does not prove the original CSV bytes were rehashed.
+        "checksum_verified": False,
+        "provenance_consistent": count > 0 and checksum_count == count and distinct_checksums == 1,
+        "verification_method": "database_record_metadata_only",
         "valid_records": count,
-        "rejected_records": 0,
-        "duplicate_records": 0,
+        # Without the original ingestion report these counters cannot be reconstructed.
+        "rejected_records": None,
+        "duplicate_records": None,
     }
     return source, quality
 
