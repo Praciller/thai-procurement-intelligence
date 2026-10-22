@@ -3,13 +3,12 @@ import asyncio
 
 from sqlalchemy import select
 
-from app.database import SessionLocal, init_db
+from app.database import SessionLocal
 from app.models import ProcurementRecord
 from app.routers.records import summarize_record
 
 
 async def run(limit: int) -> None:
-    init_db()
     with SessionLocal() as session:
         records = session.scalars(select(ProcurementRecord).limit(limit)).all()
         for record in records:
