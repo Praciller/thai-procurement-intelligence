@@ -32,6 +32,11 @@ export type ProcurementRecord = {
   relevance_score?: number | null;
 };
 
+export type RecordFacets = {
+  provinces: string[];
+  categories: string[];
+};
+
 export type RecordsResponse = {
   items: ProcurementRecord[];
   total: number;
