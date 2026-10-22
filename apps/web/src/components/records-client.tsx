@@ -4,36 +4,19 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { Download, Search } from "lucide-react";
 import { getApiUrl, searchRecords } from "@/lib/api";
 import { getDictionary, normalizeLocale } from "@/lib/i18n";
-import type { ProcurementRecord, RecordsResponse } from "@/types/api";
+import type { ProcurementRecord, RecordFacets, RecordsResponse } from "@/types/api";
 import { EmptyState, RecordTable } from "@/components/ui";
 
-const syntheticProvinces = ["Bangkok", "Chiang Mai", "Phuket", "Khon Kaen", "Chonburi", "Songkhla"];
-const syntheticCategories = ["IT", "Construction", "Medical Supplies", "Education", "Utilities", "Transport", "Office Equipment"];
 const modes = ["keyword", "semantic", "hybrid"] as const;
 
 type Mode = (typeof modes)[number];
 
-export function RecordsClient({ initialRecords, locale = "en" }: { initialRecords: RecordsResponse; locale?: string }) {
+export function RecordsClient({ initialRecords, facets, locale = "en" }: { initialRecords: RecordsResponse; facets: RecordFacets; locale?: string }) {
   const normalizedLocale = normalizeLocale(locale);
   const dictionary = getDictionary(normalizedLocale);
   const text = dictionary.recordsClient;
-  const official = initialRecords.items.some((record) => !record.is_synthetic);
-  const provinces = [
-    "",
-    ...new Set(
-      official
-        ? initialRecords.items.map((record) => record.province).filter((value): value is string => Boolean(value))
-        : syntheticProvinces,
-    ),
-  ];
-  const categories = [
-    "",
-    ...new Set(
-      official
-        ? initialRecords.items.map((record) => record.procurement_category).filter((value): value is string => Boolean(value))
-        : syntheticCategories,
-    ),
-  ];
+  const provinces = ["", ...facets.provinces];
+  const categories = ["", ...facets.categories];
   const tableLabels = { ...dictionary.table, ...dictionary.common };
   const [q, setQ] = useState("");
   const [province, setProvince] = useState("");
@@ -160,9 +143,9 @@ export function RecordsClient({ initialRecords, locale = "en" }: { initialRecord
             <RecordTable records={data.items as ProcurementRecord[]} labels={tableLabels} locale={normalizedLocale} />
             {mode === "keyword" && data.total > data.page_size ? (
               <nav aria-label="Search result pages" className="mt-4 flex items-center justify-between gap-3 text-sm">
-                <button type="button" className="focus-ring rounded-md border border-border px-3 py-2 disabled:opacity-40" disabled={isPending || page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>Previous</button>
-                <span aria-live="polite">Page {page} of {Math.ceil(data.total / data.page_size)}</span>
-                <button type="button" className="focus-ring rounded-md border border-border px-3 py-2 disabled:opacity-40" disabled={isPending || page >= Math.ceil(data.total / data.page_size)} onClick={() => setPage((current) => current + 1)}>Next</button>
+                <button type="button" className="focus-ring rounded-md border border-border px-3 py-2 disabled:opacity-40" disabled={isPending || page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>{text.previousPage}</button>
+                <span aria-live="polite">{text.pageOf(page, Math.ceil(data.total / data.page_size))}</span>
+                <button type="button" className="focus-ring rounded-md border border-border px-3 py-2 disabled:opacity-40" disabled={isPending || page >= Math.ceil(data.total / data.page_size)} onClick={() => setPage((current) => current + 1)}>{text.nextPage}</button>
               </nav>
             ) : null}
           </>
