@@ -192,14 +192,32 @@ def semantic_candidates(
     query_embedding: list[float],
     limit: int = 8,
     filters: dict[str, Any] | None = None,
+    *,
+    embedding_model: str = LOCAL_HASH_EMBEDDING_MODEL,
 ) -> list[SearchResult]:
-    stmt = apply_filters(select(ProcurementRecord).join(ProcurementEmbedding), filters or {})
+    """Compare vectors only when encoder identity and dimensions are compatible.
+
+    All public callers currently encode query vectors with hashing-token-v1.
+    A future real semantic encoder must pass its own matching model identity.
+    """
+    stmt = apply_filters(
+        select(ProcurementRecord)
+        .join(ProcurementEmbedding)
+        .where(ProcurementEmbedding.embedding_model == embedding_model),
+        filters or {},
+    )
     results = []
     for record in session.scalars(stmt).unique().all():
-        if not record.embeddings:
+        similarities = [
+            cosine_similarity(query_embedding, embedding.embedding)
+            for embedding in record.embeddings
+            if embedding.embedding_model == embedding_model
+            and embedding.embedding is not None
+            and len(embedding.embedding) == len(query_embedding)
+        ]
+        if not similarities:
             continue
-        score = max(cosine_similarity(query_embedding, embedding.embedding or []) for embedding in record.embeddings)
-        results.append(SearchResult(record=record, score=score))
+        results.append(SearchResult(record=record, score=max(similarities)))
     return sorted(results, key=lambda item: (-(item.score or 0), *_stable_record_key(item)))[:limit]
 
 
@@ -223,13 +241,10 @@ def hybrid_candidates(
     keyword_ids = set(by_id)
     if query_embedding:
         for rank, result in enumerate(semantic_candidates(session, query_embedding, limit=limit, filters=filters), start=1):
-            # Hashing-token vectors are not semantic evidence: their collisions
-            # must not introduce unrelated records absent from lexical search.
-            # Real embedding models can still contribute semantic-only results.
-            if result.record.id not in keyword_ids and all(
-                embedded.embedding_model == LOCAL_HASH_EMBEDDING_MODEL
-                for embedded in result.record.embeddings
-            ):
+            # Every public query vector is hashing-token-v1. The hash score
+            # may rerank lexical evidence, but cannot add semantic-only hits.
+            # Different encoders must never be compared against that vector.
+            if result.record.id not in keyword_ids:
                 continue
             contribution = _rrf_score(rank, SEMANTIC_WEIGHT)
             existing = by_id.get(result.record.id)
