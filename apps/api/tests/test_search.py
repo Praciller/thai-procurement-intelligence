@@ -206,3 +206,24 @@ def test_real_semantic_embedding_candidates_are_not_unconditionally_removed(sess
 
     matches = hybrid_candidates(session, "semantic query", [1.0, 0.0], limit=2)
     assert [item.record.source_record_id for item in matches] == ["semantic-only"]
+
+
+
+def test_keyword_filter_treats_sql_wildcards_as_literal_text(session: Session):
+    session.add_all([
+        _record("percent", "Budget reached 100% utilization"),
+        _record("underscore", "Asset_type scanner"),
+        _record("regular", "Budget projection"),
+    ])
+    session.commit()
+
+    percent, percent_total = search_records(session, {"q": "%"})
+    underscore, underscore_total = search_records(session, {"q": "_"})
+    fake_agency, agency_total = search_records(session, {"agency": "%"})
+
+    assert percent_total == 1
+    assert [item.record.source_record_id for item in percent] == ["percent"]
+    assert underscore_total == 1
+    assert [item.record.source_record_id for item in underscore] == ["underscore"]
+    assert agency_total == 0
+    assert fake_agency == []
