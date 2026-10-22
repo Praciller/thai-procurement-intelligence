@@ -82,6 +82,11 @@ export function getRecords(query = "") {
   return safeApiFetch<RecordsResponse>(`/records${query}`, emptyRecords, { cache: "no-store" });
 }
 
+/** Client-side searches must not treat an unavailable API as an empty result set. */
+export function searchRecords(query = "") {
+  return apiFetch<RecordsResponse>(`/records${query}`, { cache: "no-store" });
+}
+
 export function getRecord(id: string) {
   return safeApiFetch<ProcurementRecord | null>(`/records/${id}`, null, { cache: "no-store" });
 }
