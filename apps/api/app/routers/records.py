@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.database import get_session
 from app.models import AISummary, ProcurementRecord
-from app.schemas import ProcurementRecordDetail, RecordsResponse, SearchMode, SemanticSearchRequest, SummaryResponse
+from app.schemas import ProcurementRecordDetail, RecordFacets, RecordsResponse, SearchMode, SemanticSearchRequest, SummaryResponse
 from app.services.embeddings import ensure_embedding, hash_embedding
 from app.services.llm.factory import get_llm_provider
 from app.services.search import hybrid_candidates, keyword_candidates, search_records, semantic_candidates
@@ -73,6 +73,27 @@ def list_records(
         item.relevance_score = result.score
         items.append(item)
     return RecordsResponse(items=items, total=total, page=page, page_size=page_size)
+
+
+@router.get("/facets", response_model=RecordFacets)
+def record_facets(session: Session = Depends(get_session)) -> RecordFacets:
+    """Dataset-wide, not first-page-only filter options."""
+    mode = get_settings().dataset_mode
+
+    def values(column) -> list[str]:
+        return list(
+            session.scalars(
+                select(column)
+                .where(ProcurementRecord.dataset_type == mode, column.is_not(None), column != "")
+                .distinct()
+                .order_by(column)
+            ).all()
+        )
+
+    return RecordFacets(
+        provinces=values(ProcurementRecord.province),
+        categories=values(ProcurementRecord.procurement_category),
+    )
 
 
 @router.get("/{record_id}", response_model=ProcurementRecordDetail)
