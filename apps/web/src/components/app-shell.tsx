@@ -29,6 +29,12 @@ export function AppShell({ children, dataset }: { children: React.ReactNode; dat
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-2 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-3 focus:text-foreground focus:ring-2 focus:ring-accent"
+      >
+        {dictionary.shell.skipToContent}
+      </a>
       <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
           <Link href="/" className="flex items-center gap-3 focus-ring rounded-md">
@@ -41,7 +47,7 @@ export function AppShell({ children, dataset }: { children: React.ReactNode; dat
             </span>
           </Link>
           <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
-            <nav className="flex gap-1 overflow-x-auto" aria-label="Primary">
+            <nav className="flex gap-1 overflow-x-auto" aria-label={dictionary.shell.primaryNavigation}>
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
@@ -49,6 +55,7 @@ export function AppShell({ children, dataset }: { children: React.ReactNode; dat
                   <Link
                     key={item.href}
                     href={withLocale(item.href, locale)}
+                    aria-current={active ? "page" : undefined}
                     className={`focus-ring flex min-h-10 items-center gap-2 rounded-md px-3 text-sm transition ${
                       active ? "bg-surface-strong text-foreground" : "text-muted hover:bg-surface"
                     }`}
@@ -66,6 +73,7 @@ export function AppShell({ children, dataset }: { children: React.ReactNode; dat
                 <Link
                   key={language.id}
                   href={withLocale(currentHref, language.id)}
+                  aria-current={active ? "true" : undefined}
                   className={`focus-ring flex min-h-8 min-w-10 items-center justify-center rounded px-2 text-xs font-semibold transition ${
                     active ? "bg-accent text-background" : "text-muted hover:bg-background"
                   }`}
@@ -93,7 +101,7 @@ export function AppShell({ children, dataset }: { children: React.ReactNode; dat
           </span>
         </div>
       </div>
-      <main>{children}</main>
+      <main id="main-content" tabIndex={-1}>{children}</main>
     </div>
   );
 }
