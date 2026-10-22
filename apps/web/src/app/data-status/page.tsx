@@ -58,7 +58,7 @@ export default async function DataStatusPage({ searchParams }: { searchParams?: 
             <table className="min-w-full text-left text-sm">
               <thead className="text-xs uppercase tracking-wide text-muted">
                 <tr>
-                  <th className="py-2 pr-4">{dictionary.dataStatus.source}</th>
+                  <th scope="col" className="py-2 pr-4">{dictionary.dataStatus.source}</th>
                   <th className="py-2 pr-4">{dictionary.dataStatus.status}</th>
                   <th className="py-2 pr-4">{dictionary.dataStatus.rows}</th>
                   <th className="py-2 pr-4">{dictionary.dataStatus.inserted}</th>
