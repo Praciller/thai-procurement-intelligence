@@ -15,6 +15,8 @@ Backend environment:
 - `CORS_ORIGINS`
 - `DATASET_MODE=synthetic|official_snapshot`
 - `ADMIN_INGESTION_TOKEN` (leave unset to disable public ingestion)
+- `ENABLE_LLM=false` by default; if enabling it, set `AI_HOURLY_REQUEST_LIMIT` and migrate to `0003_ai_hourly_budget`
+- `LOG_AI_QUERIES=false` (do not store public prompts/responses by default)
 - `OFFICIAL_SNAPSHOT_METADATA`
 - `OFFICIAL_QUALITY_REPORT`
 
