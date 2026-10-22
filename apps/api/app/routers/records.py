@@ -9,7 +9,7 @@ from app.schemas import ProcurementRecordDetail, RecordFacets, RecordsResponse, 
 from app.services.embeddings import ensure_embedding, hash_embedding
 from app.services.llm.factory import get_llm_provider
 from app.services.llm.budget import protect_external_inference
-from app.services.search import hybrid_candidates, keyword_candidates, search_records, semantic_candidates
+from app.services.search import grounded_local_semantic_candidates, hybrid_candidates, keyword_candidates, normalize_retrieval_terms, search_records
 
 router = APIRouter(prefix="/records", tags=["records"])
 semantic_router = APIRouter(prefix="/search", tags=["search"])
@@ -64,9 +64,17 @@ def list_records(
     }
     filters = {key: value for key, value in filters.items() if value not in (None, "")}
     if search_mode in {"semantic", "hybrid"} and q:
-        embedding = hash_embedding(q)
+        if page != 1:
+            raise HTTPException(
+                status_code=422,
+                detail="Ranked search pagination is not supported; use page=1",
+            )
+        embedding = hash_embedding(normalize_retrieval_terms(q) if search_mode == "semantic" else q)
         if search_mode == "semantic":
-            candidates = semantic_candidates(session, embedding, limit=page_size, filters={k: v for k, v in filters.items() if k != "q"})
+            candidates = grounded_local_semantic_candidates(
+                session, q, embedding, limit=page_size,
+                filters={k: v for k, v in filters.items() if k != "q"},
+            )
         else:
             candidates = hybrid_candidates(session, q, embedding, limit=page_size, filters={k: v for k, v in filters.items() if k != "q"})
         items = []
@@ -188,10 +196,8 @@ async def summarize_record(record_id: str, session: Session = Depends(get_sessio
 
 @semantic_router.post("/semantic", response_model=list[ProcurementRecordDetail])
 def semantic_search(request: SemanticSearchRequest, session: Session = Depends(get_session)) -> list[ProcurementRecordDetail]:
-    embedding = hash_embedding(request.query)
-    candidates = semantic_candidates(session, embedding, limit=request.limit)
-    if not candidates:
-        candidates = keyword_candidates(session, request.query, limit=request.limit)
+    embedding = hash_embedding(normalize_retrieval_terms(request.query))
+    candidates = grounded_local_semantic_candidates(session, request.query, embedding, limit=request.limit)
     items = []
     for candidate in candidates:
         item = _detail_schema(candidate.record)
