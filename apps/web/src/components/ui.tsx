@@ -132,7 +132,7 @@ export function RecordTable({
       <table className="min-w-full border-collapse text-left text-sm">
         <thead className="bg-surface-strong text-xs uppercase tracking-wide text-muted">
           <tr>
-            <th className="px-4 py-3">{text.project}</th>
+            <th scope="col" className="px-4 py-3">{text.project}</th>
             <th className="px-4 py-3">{text.agency}</th>
             <th className="px-4 py-3">{text.province}</th>
             <th className="px-4 py-3">{text.budget}</th>
