@@ -11,6 +11,14 @@ class LLMProvider(ABC):
     def is_external(self) -> bool:
         return self.provider_name != "mock"
 
+    @property
+    def may_call_external(self) -> bool:
+        """True if handling this request can invoke any external API.
+
+        Unlike is_external, this is a pre-inference capability check.
+        """
+        return self.is_external
+
     @abstractmethod
     async def generate_summary(self, record: ProcurementRecord) -> str:
         raise NotImplementedError
