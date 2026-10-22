@@ -44,3 +44,5 @@ This is a **global inference-cost safeguard**, not per-user authentication or co
 Raw assistant questions and generated answers are **not persisted** by default (`LOG_AI_QUERIES=false`). Enable logging only after deciding retention, access control and user disclosure. This change does not delete historical rows.
 
 Apply Alembic revision `0003_ai_hourly_budget` before enabling external inference on existing deployments.
+
+The budget guard evaluates the **entire enabled external-capable fallback chain**, not just the first selected provider. A mock-first chain that can fall through to an external provider must reserve a permit before attempting inference. After generation, `is_external` continues to describe the provider that **actually answered** (so mock responses are not labeled external). The guard remains conservative: a permitted request that ends at a mock may use a permit if an external fallback was possible.
