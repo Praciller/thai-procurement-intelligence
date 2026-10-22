@@ -322,3 +322,15 @@ def test_local_semantic_search_preserves_supported_keyword_evidence(
     assert len(post.json()) == get.json()["total"] == 1
     assert post.json()[0]["procurement_category"] == "IT"
     assert get.json()["items"][0]["procurement_category"] == "IT"
+
+
+
+def test_records_search_does_not_expand_raw_sql_like_metacharacters(
+    client: TestClient, session: Session
+):
+    seed(session)
+    for query in ("%", "_"):
+        response = client.get("/api/records", params={"q": query})
+        assert response.status_code == 200
+        assert response.json()["items"] == []
+        assert response.json()["total"] == 0
