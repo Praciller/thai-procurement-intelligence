@@ -46,6 +46,21 @@ class ProviderRouter(LLMProvider):
         self.model_name = primary.model_name if primary else "fallback"
 
     @property
+    def may_call_external(self) -> bool:
+        """Inspect the eligible fallback chain before reserving the shared budget.
+
+        provider_name/is_external deliberately track the chosen provider, which
+        might be mock even when a later fallback can invoke an external API.
+        """
+        return any(
+            entry.config.enabled
+            and entry.config.automatic_fallback_allowed
+            and (not self.deterministic_evaluation or entry.config.deterministic_evaluation_allowed)
+            and entry.provider.is_external
+            for entry in self.entries
+        )
+
+    @property
     def provider_names(self) -> tuple[str, ...]:
         return tuple(entry.config.name for entry in self.entries)
 
