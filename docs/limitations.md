@@ -13,3 +13,5 @@
 
 - If bundled snapshot quality evidence is unavailable, Data Status falls back to database-record metadata. Matching stored checksum fields only establish metadata consistency; they are **not** reported as a verified checksum of the original CSV bytes. Missing historical rejection/duplicate counts remain unknown.
 - Summary caches are keyed to source-content fingerprints and a versioned prompt. The initial model of the selected provider chain is used for cache lookup; results produced by a different fallback or dynamic model may require another inference call.
+
+- The public `semantic` endpoints in the zero-cost demo use lexical-evidence-gated, local-hash-vector reranking. They intentionally return no results without lexical support instead of presenting coincidental hash similarity as semantic evidence. They are **not** multilingual semantic retrieval. Ranked semantic/hybrid search currently supports the first page only; later pages return HTTP 422 rather than silently repeating page one.
