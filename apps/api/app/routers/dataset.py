@@ -60,7 +60,9 @@ def _official_record_evidence(session: Session) -> tuple[dict | None, dict | Non
         "mapping_version": record.mapping_version,
     }
     quality = {
-        "checksum_verified": count > 0 and checksum_count == count and distinct_checksums == 1,
+        "checksum_verified": False,
+        "stored_provenance_consistent": count > 0 and checksum_count == count and distinct_checksums == 1,
+        "verification_note": "Stored checksums agree; source file bytes were not rehashed in this fallback.",
         "valid_records": count,
         "rejected_records": 0,
         "duplicate_records": 0,

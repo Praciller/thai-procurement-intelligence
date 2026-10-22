@@ -5,8 +5,17 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app import models  # noqa: F401
+from app.config import get_settings
 from app.database import Base, get_session
 from app.main import app
+
+
+@pytest.fixture(autouse=True)
+def isolate_settings_cache():
+    """Avoid leaking monkeypatched dataset mode between unrelated tests."""
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
 
 
 @pytest.fixture()
