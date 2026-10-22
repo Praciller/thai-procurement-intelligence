@@ -23,7 +23,9 @@ The base branch of every stacked PR must point to its immediate predecessor unti
 
 - [ ] Keep `ENABLE_LLM=false` during initial deployment. Do not configure or disclose external API keys in PRs, logs, test reports, or client-side code.
 - [ ] Take and verify a restorable production database backup **before** schema changes.
-- [ ] Rehearse `alembic upgrade head` (through revision `0003_ai_hourly_budget`) on an isolated database using the production PostgreSQL version; SQLite-only evidence is not sufficient.
+- [ ] Rehearse `alembic upgrade head` (through revision `0003_ai_hourly_budget`) on an isolated PostgreSQL 16 database, starting from revision `0002` **with existing records**; verify records survive and repeat `upgrade head` without changing anything. SQLite-only evidence is not sufficient.
+- [ ] Confirm API startup and CLI import/embedding/summarization jobs do **not** create or migrate schemas implicitly. Alembic must be applied explicitly before starting the API or running jobs.
+- [ ] If an earlier runtime created `ai_hourly_budget` while Alembic still reports `0002`, migration `0003` validates the existing column and key structure and adopts it only when identical. Treat schema mismatch as an explicit stop rather than using `alembic stamp` or dropping tables blindly.
 - [ ] Verify runtime database privileges and backup/restore procedure. Do not run `alembic downgrade` automatically on a database containing new data.
 - [ ] Set explicit `AI_HOURLY_REQUEST_LIMIT` and keep `LOG_AI_QUERIES=false` if a later release enables external LLMs. The budget counts *external-capable requests*, not every provider retry, so authentication/edge abuse protection may still be needed.
 - [ ] Check CORS and public write endpoints against the intended deployment threat model before exposing external inference.
