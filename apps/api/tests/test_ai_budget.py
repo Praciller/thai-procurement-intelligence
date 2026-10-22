@@ -100,3 +100,103 @@ def test_qa_logging_is_only_enabled_by_explicit_opt_in(client, session, monkeypa
         assert session.scalar(select(func.count()).select_from(AIQALog)) == 1
     finally:
         get_settings.cache_clear()
+
+
+def test_mock_first_router_cannot_bypass_zero_external_budget(session):
+    import asyncio
+
+    from app.config import Settings
+    from app.services.llm.budget import protect_external_inference
+    from app.services.llm.errors import ProviderError, ProviderFailureCategory
+    from app.services.llm.provider_config import ProviderConfig
+    from app.services.llm.router import ProviderEntry, ProviderRouter
+
+    class FailingMock(MockLLMProvider):
+        async def answer_question(self, question, records):
+            raise ProviderError("mock", ProviderFailureCategory.NETWORK_ERROR)
+
+    class RecordingExternal(MockLLMProvider):
+        provider_name = "external-provider"
+        model_name = "external-test"
+
+        def __init__(self):
+            self.calls = 0
+
+        async def answer_question(self, question, records):
+            self.calls += 1
+            return "external answer"
+
+    def config(name, api_style):
+        return ProviderConfig(
+            name=name, api_style=api_style, base_url=None, api_key_env=None,
+            model="test", timeout=1, max_retries=0, enabled=True,
+            automatic_fallback_allowed=True, deterministic_evaluation_allowed=True,
+        )
+
+    external = RecordingExternal()
+    router = ProviderRouter([
+        ProviderEntry(config("mock", "mock"), FailingMock()),
+        ProviderEntry(config("external-provider", "openai_compatible"), external),
+    ])
+    assert router.provider_name == "mock"
+    assert router.is_external is False
+    assert router.may_call_external is True
+
+    # If we invoked the router directly, the failing mock would reach external.
+    settings = Settings(_env_file=None, enable_llm=True, ai_hourly_request_limit=0)
+    protected = protect_external_inference(session, router, settings)
+    assert protected.provider_name == "mock"
+    assert asyncio.run(protected.answer_question("Computer", [])) == (
+        "Cannot determine from available procurement records."
+    )
+    assert external.calls == 0
+    assert session.scalar(select(func.count()).select_from(AIHourlyBudget)) == 0
+
+
+def test_mock_first_router_charges_budget_if_external_fallback_is_possible(session):
+    import asyncio
+
+    from app.config import Settings
+    from app.services.llm.budget import protect_external_inference
+    from app.services.llm.provider_config import ProviderConfig
+    from app.services.llm.router import ProviderEntry, ProviderRouter
+
+    class CountingExternal(MockLLMProvider):
+        provider_name = "paid-capable"
+        model_name = "fixture"
+
+        def __init__(self):
+            self.calls = 0
+
+        async def answer_question(self, question, records):
+            self.calls += 1
+            return "external result"
+
+    def config(name, api_style):
+        return ProviderConfig(
+            name=name, api_style=api_style, base_url=None, api_key_env=None,
+            model="fixture", timeout=1, max_retries=0, enabled=True,
+            automatic_fallback_allowed=True, deterministic_evaluation_allowed=True,
+        )
+
+    external = CountingExternal()
+    router = ProviderRouter([
+        ProviderEntry(config("mock", "mock"), MockLLMProvider()),
+        ProviderEntry(config("paid-capable", "openai_compatible"), external),
+    ])
+    settings = Settings(_env_file=None, enable_llm=True, ai_hourly_request_limit=1)
+    protected = protect_external_inference(session, router, settings)
+    assert protected is router
+    response = asyncio.run(protected.answer_question("Computer", []))
+    assert response == "Cannot determine from available procurement records."
+    assert router.is_external is False  # actual answering provider was local mock
+    assert external.calls == 0
+    assert session.scalar(select(AIHourlyBudget.requests)) == 1
+
+    another = ProviderRouter([
+        ProviderEntry(config("mock", "mock"), MockLLMProvider()),
+        ProviderEntry(config("paid-capable", "openai_compatible"), external),
+    ])
+    exhausted = protect_external_inference(session, another, settings)
+    assert exhausted.provider_name == "mock"
+    assert external.calls == 0
