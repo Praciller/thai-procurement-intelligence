@@ -17,6 +17,7 @@ The base branch of every stacked PR must point to its immediate predecessor unti
 - [ ] Run `python scripts/check_repo_guardrails.py`.
 - [ ] Rerun `python -m app.jobs.evaluate_official_snapshot` from `apps/api` and ensure committed evaluation artifacts show **no unexplained drift**. The frozen benchmark has only 8 judged queries (7 positive, 1 negative) against a non-random 250-record source snapshot; do not advertise population-wide retrieval quality.
 - [ ] Review changes in `reports/official_snapshot/` and maintain the distinction between original-file checksum verification and mere database-provenance consistency.
+- [ ] Ensure stored embeddings from unrelated models or incompatible dimensions cannot influence rankings computed with the local hashing-token-v1 query encoder; a new model must bring a matched query encoder and evaluation.
 - [ ] Manually verify keyboard skip navigation, responsive search results, filters and both supported UI languages; a smoke test is not a full WCAG audit.
 
 ## Database and infrastructure gates
