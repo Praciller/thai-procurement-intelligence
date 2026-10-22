@@ -7,6 +7,7 @@ from app.models import AIQALog
 from app.schemas import AssistantRequest, AssistantResponse, Citation, ProcurementRecordListItem
 from app.services.embeddings import hash_embedding
 from app.services.llm.factory import get_llm_provider
+from app.services.llm.budget import protect_external_inference
 from app.services.search import hybrid_candidates, keyword_candidates, normalize_assistant_query
 
 router = APIRouter(prefix="/assistant", tags=["assistant"])
@@ -31,19 +32,20 @@ async def ask(request: AssistantRequest, session: Session = Depends(get_session)
             retrieved_records=[],
         )
 
-    provider = get_llm_provider(settings)
+    provider = protect_external_inference(session, get_llm_provider(settings), settings)
     answer = await provider.answer_question(request.question, records)
 
-    session.add(
-        AIQALog(
-            question=request.question,
-            answer=answer,
-            retrieved_record_ids=[record.id for record in records],
-            provider=provider.provider_name,
-            model=provider.model_name,
+    if settings.log_ai_queries:
+        session.add(
+            AIQALog(
+                question=request.question,
+                answer=answer,
+                retrieved_record_ids=[record.id for record in records],
+                provider=provider.provider_name,
+                model=provider.model_name,
+            )
         )
-    )
-    session.commit()
+        session.commit()
 
     return AssistantResponse(
         answer=answer,
