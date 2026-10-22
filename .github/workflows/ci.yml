@@ -114,9 +114,15 @@ jobs:
       - run: npm ci
       - run: uv sync --locked
         working-directory: apps/api
-      - run: uv run alembic upgrade head
+      # Rehearse a populated PostgreSQL database upgrading from the prior
+      # migration. The importer must not create new ORM tables prematurely.
+      - run: uv run alembic upgrade 0002_official_provenance
         working-directory: apps/api
       - run: uv run python -m app.jobs.import_csv --file ../../data/sample/procurement_sample.csv --source sample
+        working-directory: apps/api
+      - run: uv run alembic upgrade head
+        working-directory: apps/api
+      - run: uv run alembic current
         working-directory: apps/api
       - run: uv run python -m app.jobs.generate_embeddings --limit 1000
         working-directory: apps/api
