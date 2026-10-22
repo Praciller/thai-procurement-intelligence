@@ -7,7 +7,8 @@ export default async function AssistantPage({ searchParams }: { searchParams?: P
   const params = await searchParams;
   const locale = normalizeLocale(params?.lang);
   const dictionary = getDictionary(locale);
-  const dataset = await getDatasetStatus();
+  const datasetResult = await getDatasetStatus();
+  const dataset = datasetResult.ok ? datasetResult.data : null;
 
   return (
     <Section>
@@ -17,9 +18,11 @@ export default async function AssistantPage({ searchParams }: { searchParams?: P
       />
       <div className="mb-5">
         <DemoNotice>
-          {dataset.dataset_mode === "official_snapshot"
-            ? dictionary.common.officialDatasetNote
-            : dictionary.common.demoNotice}
+          {dataset === null
+            ? dictionary.common.notAvailable
+            : dataset.dataset_mode === "official_snapshot"
+              ? dictionary.common.officialDatasetNote
+              : dictionary.common.demoNotice}
         </DemoNotice>
       </div>
       <AssistantClient key={locale} locale={locale} />

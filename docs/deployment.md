@@ -11,6 +11,7 @@ Current optional hosted path:
 Backend environment:
 
 - `DATABASE_URL`
+- `ENABLE_LLM` (leave unset or false for the deterministic zero-key path)
 - `ENABLE_EMBEDDINGS`
 - `CORS_ORIGINS`
 - `DATASET_MODE=synthetic|official_snapshot`
@@ -23,6 +24,16 @@ Frontend environment:
 - `NEXT_PUBLIC_API_BASE_URL` (use `/backend/api` on Vercel Services)
 - `NEXT_PUBLIC_SITE_URL` (use the public production alias, for example `https://thai-procurement-intelligence.vercel.app`)
 - `NEXT_PUBLIC_DEMO_MODE`
+
+## External LLM request limits
+
+When `ENABLE_LLM=true`, evidence-backed summary and assistant requests that can use an external provider share an in-process limit of five calls per client IP per minute. The API uses `Request.client.host`; it ignores `X-Forwarded-For`. Requests without retrieved evidence return the deterministic no-evidence answer before provider selection. The deterministic mock provider does not consume an external-call slot.
+
+Assistant questions are limited to 500 characters. Assistant filters accept only the documented search fields with bounded text and numeric values. Provider prompts are limited to 24,000 characters. Invalid request fields return `422`, oversized provider input returns `413`, and a rate-limited request returns `429` with `Retry-After`.
+
+The limiter uses process memory. It resets on restart and does not coordinate API instances. Production deployments with multiple instances still need an edge or WAF rate limit for the summary and assistant routes. Behind a proxy, configure that edge limit with its trusted client-IP handling because this application deliberately does not trust forwarded headers.
+
+Ranked semantic and hybrid record searches retain at most the first 5,000 ranked results per request window. They return the exact number of matching candidates and reject pages beyond the window. Keyword search keeps SQL offset pagination and supports `date_desc`, `date_asc`, `budget_desc`, and `budget_asc`. Ranked searches reject `sort` because their order comes from relevance.
 
 The root `vercel.json` defines two services:
 

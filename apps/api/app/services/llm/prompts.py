@@ -1,3 +1,5 @@
+import hashlib
+import json
 from pathlib import Path
 
 from app.models import ProcurementRecord
@@ -16,6 +18,17 @@ def summary_messages(record: ProcurementRecord) -> list[dict[str, str]]:
         raw_text=record.raw_text or record.normalized_text or "not available",
     )
     return [{"role": "system", "content": system.removeprefix("System:\n")}, {"role": "user", "content": user}]
+
+
+def summary_cache_version(record: ProcurementRecord, provider_identity: str) -> str:
+    cache_input = json.dumps(
+        {"provider_identity": provider_identity, "messages": summary_messages(record)},
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    content_digest = hashlib.sha256(cache_input.encode("utf-8")).hexdigest()[:29]
+    return f"summary-v2-{content_digest}"
 
 
 def question_messages(question: str, records: list[ProcurementRecord]) -> list[dict[str, str]]:

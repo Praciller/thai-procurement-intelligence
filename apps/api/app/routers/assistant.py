@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -7,6 +7,8 @@ from app.models import AIQALog
 from app.schemas import AssistantRequest, AssistantResponse, Citation, ProcurementRecordListItem
 from app.services.embeddings import hash_embedding
 from app.services.llm.factory import get_llm_provider
+from app.services.llm.limits import enforce_external_provider_limits
+from app.services.llm.prompts import question_messages
 from app.services.search import hybrid_candidates, keyword_candidates, normalize_assistant_query
 
 router = APIRouter(prefix="/assistant", tags=["assistant"])
@@ -14,13 +16,14 @@ NO_EVIDENCE_ANSWER = "Cannot determine from available procurement records."
 
 
 @router.post("/ask", response_model=AssistantResponse)
-async def ask(request: AssistantRequest, session: Session = Depends(get_session)) -> AssistantResponse:
+async def ask(body: AssistantRequest, request: Request, session: Session = Depends(get_session)) -> AssistantResponse:
     settings = get_settings()
-    retrieval_query = normalize_assistant_query(request.question)
+    retrieval_query = normalize_assistant_query(body.question)
     embedding = hash_embedding(retrieval_query) if settings.enable_embeddings and retrieval_query else None
-    candidates = hybrid_candidates(session, retrieval_query, embedding, limit=request.limit, filters=request.filters)
+    filters = body.filters.model_dump(exclude_none=True) if body.filters else None
+    candidates = hybrid_candidates(session, retrieval_query, embedding, limit=body.limit, filters=filters)
     if not candidates:
-        candidates = keyword_candidates(session, retrieval_query, limit=request.limit, filters=request.filters)
+        candidates = keyword_candidates(session, retrieval_query, limit=body.limit, filters=filters)
     records = [candidate.record for candidate in candidates]
 
     if not records:
@@ -32,11 +35,12 @@ async def ask(request: AssistantRequest, session: Session = Depends(get_session)
         )
 
     provider = get_llm_provider(settings)
-    answer = await provider.answer_question(request.question, records)
+    enforce_external_provider_limits(provider, request, question_messages(body.question, records))
+    answer = await provider.answer_question(body.question, records)
 
     session.add(
         AIQALog(
-            question=request.question,
+            question=body.question,
             answer=answer,
             retrieved_record_ids=[record.id for record in records],
             provider=provider.provider_name,

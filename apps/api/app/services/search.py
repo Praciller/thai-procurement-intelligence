@@ -4,6 +4,7 @@ import math
 import re
 from dataclasses import dataclass
 from decimal import Decimal
+from heapq import heappush, heapreplace
 from typing import Any
 
 from sqlalchemy import Select, and_, func, or_, select
@@ -19,6 +20,7 @@ RRF_K = 60
 KEYWORD_WEIGHT = 0.55
 SEMANTIC_WEIGHT = 0.45
 MIN_THAI_FUZZY_SCORE = 0.30
+MAX_RANKED_SEARCH_RESULTS = 5_000
 ASSISTANT_QUERY_STOP_PHRASES = (
     "จากข้อมูลที่ให้เท่านั้น",
     "จากข้อมูลที่ค้นพบ",
@@ -34,6 +36,29 @@ class SearchResult:
     record: ProcurementRecord
     score: float | None = None
     exact_phrase: bool = False
+
+
+@dataclass
+class _HeapCandidate:
+    key: tuple[Any, ...]
+    result: SearchResult
+
+    def __lt__(self, other: _HeapCandidate) -> bool:
+        return self.key > other.key
+
+
+def _keep_top(heap: list[_HeapCandidate], result: SearchResult, key: tuple[Any, ...], limit: int) -> None:
+    if limit <= 0:
+        return
+    candidate = _HeapCandidate(key, result)
+    if len(heap) < limit:
+        heappush(heap, candidate)
+    elif key < heap[0].key:
+        heapreplace(heap, candidate)
+
+
+def _sorted_top(heap: list[_HeapCandidate]) -> list[SearchResult]:
+    return [candidate.result for candidate in sorted(heap, key=lambda candidate: candidate.key)]
 
 
 def _stable_record_key(result: SearchResult) -> tuple[str, str, str, str]:
@@ -65,6 +90,8 @@ def apply_filters(stmt: Select, filters: dict[str, Any]) -> Select:
         text_fields = (
             ProcurementRecord.project_name,
             ProcurementRecord.agency_name,
+            ProcurementRecord.province,
+            ProcurementRecord.procurement_category,
             ProcurementRecord.raw_text,
             ProcurementRecord.normalized_text,
         )
@@ -127,26 +154,34 @@ def search_records(
     return [SearchResult(record=row) for row in session.scalars(stmt).all()], total
 
 
-def keyword_candidates(
+def keyword_candidates_with_total(
     session: Session,
     query: str,
     limit: int = 8,
     filters: dict[str, Any] | None = None,
-) -> list[SearchResult]:
+) -> tuple[list[SearchResult], int, int]:
     query = query.strip()
     if not query:
-        return []
+        return [], 0, 0
     structured_filters = {key: value for key, value in (filters or {}).items() if key != "q"}
-    stmt = apply_filters(select(ProcurementRecord), structured_filters).order_by(
+    structured_filters["q"] = query
+    stable = (
         ProcurementRecord.source_name,
         ProcurementRecord.source_record_id,
         ProcurementRecord.content_hash,
         ProcurementRecord.id,
     )
+    stmt = apply_filters(
+        select(ProcurementRecord, ProcurementEmbedding.id).outerjoin(
+            ProcurementEmbedding,
+            ProcurementEmbedding.procurement_id == ProcurementRecord.id,
+        ),
+        structured_filters,
+    ).order_by(*stable, ProcurementEmbedding.id)
     query_tokens = tokenize(query)
     query_has_thai = any(THAI_TOKEN_RE.fullmatch(token) for token in TOKEN_RE.findall(query))
-    results = []
-    for record in session.scalars(stmt).all():
+
+    def score_record(record: ProcurementRecord, has_embedding: bool, heap: list[_HeapCandidate]) -> tuple[int, int]:
         haystack = " ".join(
             value or ""
             for value in (record.project_name, record.agency_name, record.province, record.procurement_category, record.raw_text)
@@ -155,11 +190,42 @@ def keyword_candidates(
         phrase_match = query.strip().casefold() in haystack.casefold()
         score = 1.0 if phrase_match else overlap / max(len(query_tokens), 1)
         if score <= 0:
-            continue
+            return 0, 0
         if query_has_thai and not phrase_match and score < MIN_THAI_FUZZY_SCORE:
-            continue
-        results.append(SearchResult(record=record, score=score, exact_phrase=phrase_match))
-    return sorted(results, key=lambda item: (-int(item.exact_phrase), -(item.score or 0), *_stable_record_key(item)))[:limit]
+            return 0, 0
+        result = SearchResult(record=record, score=score, exact_phrase=phrase_match)
+        _keep_top(heap, result, (-int(phrase_match), -score, *_stable_record_key(result)), limit)
+        return 1, int(has_embedding)
+
+    heap: list[_HeapCandidate] = []
+    total = 0
+    embedded_total = 0
+    current_record: ProcurementRecord | None = None
+    has_embedding = False
+    for record, embedding_id in session.execute(stmt).yield_per(200):
+        if current_record is not None and record.id != current_record.id:
+            count, embedded_count = score_record(current_record, has_embedding, heap)
+            total += count
+            embedded_total += embedded_count
+            has_embedding = False
+        current_record = record
+        has_embedding = has_embedding or embedding_id is not None
+    if current_record is not None:
+        count, embedded_count = score_record(current_record, has_embedding, heap)
+        total += count
+        embedded_total += embedded_count
+
+    return _sorted_top(heap), total, embedded_total
+
+
+def keyword_candidates(
+    session: Session,
+    query: str,
+    limit: int = 8,
+    filters: dict[str, Any] | None = None,
+) -> list[SearchResult]:
+    results, _, _ = keyword_candidates_with_total(session, query, limit=limit, filters=filters)
+    return results
 
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:
@@ -171,20 +237,49 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
     return dot / (mag_a * mag_b)
 
 
+def semantic_candidates_with_total(
+    session: Session,
+    query_embedding: list[float],
+    limit: int = 8,
+    filters: dict[str, Any] | None = None,
+) -> tuple[list[SearchResult], int]:
+    stmt = apply_filters(
+        select(ProcurementRecord, ProcurementEmbedding.embedding)
+        .join(ProcurementEmbedding, ProcurementEmbedding.procurement_id == ProcurementRecord.id),
+        filters or {},
+    ).order_by(ProcurementRecord.id, ProcurementEmbedding.id)
+    heap: list[_HeapCandidate] = []
+    total = 0
+    current_record: ProcurementRecord | None = None
+    current_score: float | None = None
+
+    def score_record(record: ProcurementRecord, score: float) -> None:
+        nonlocal total
+        result = SearchResult(record=record, score=score)
+        _keep_top(heap, result, (-score, *_stable_record_key(result)), limit)
+        total += 1
+
+    for record, vector in session.execute(stmt).yield_per(200):
+        if current_record is not None and record.id != current_record.id:
+            score_record(current_record, current_score if current_score is not None else 0.0)
+            current_score = None
+        current_record = record
+        similarity = cosine_similarity(query_embedding, vector or [])
+        current_score = similarity if current_score is None else max(current_score, similarity)
+    if current_record is not None:
+        score_record(current_record, current_score if current_score is not None else 0.0)
+
+    return _sorted_top(heap), total
+
+
 def semantic_candidates(
     session: Session,
     query_embedding: list[float],
     limit: int = 8,
     filters: dict[str, Any] | None = None,
 ) -> list[SearchResult]:
-    stmt = apply_filters(select(ProcurementRecord).join(ProcurementEmbedding), filters or {})
-    results = []
-    for record in session.scalars(stmt).unique().all():
-        if not record.embeddings:
-            continue
-        score = max(cosine_similarity(query_embedding, embedding.embedding or []) for embedding in record.embeddings)
-        results.append(SearchResult(record=record, score=score))
-    return sorted(results, key=lambda item: (-(item.score or 0), *_stable_record_key(item)))[:limit]
+    results, _ = semantic_candidates_with_total(session, query_embedding, limit=limit, filters=filters)
+    return results
 
 
 def _rrf_score(rank: int, weight: float) -> float:
@@ -198,18 +293,33 @@ def hybrid_candidates(
     limit: int = 8,
     filters: dict[str, Any] | None = None,
 ) -> list[SearchResult]:
+    results, _ = hybrid_candidates_with_total(session, query, query_embedding, limit=limit, filters=filters)
+    return results
+
+
+def hybrid_candidates_with_total(
+    session: Session,
+    query: str,
+    query_embedding: list[float] | None,
+    limit: int = 8,
+    filters: dict[str, Any] | None = None,
+) -> tuple[list[SearchResult], int]:
     query = query.strip()
     if not query:
-        return []
+        return [], 0
     by_id: dict[str, SearchResult] = {}
-    for rank, result in enumerate(keyword_candidates(session, query, limit=limit, filters=filters), start=1):
+    keyword_results, keyword_total, keyword_embedding_overlap = keyword_candidates_with_total(session, query, limit=limit, filters=filters)
+    for rank, result in enumerate(keyword_results, start=1):
         by_id[result.record.id] = SearchResult(record=result.record, score=_rrf_score(rank, KEYWORD_WEIGHT))
+    semantic_total = 0
     if query_embedding:
-        for rank, result in enumerate(semantic_candidates(session, query_embedding, limit=limit, filters=filters), start=1):
+        semantic_results, semantic_total = semantic_candidates_with_total(session, query_embedding, limit=limit, filters=filters)
+        for rank, result in enumerate(semantic_results, start=1):
             contribution = _rrf_score(rank, SEMANTIC_WEIGHT)
             existing = by_id.get(result.record.id)
             if existing:
                 existing.score = (existing.score or 0) + contribution
             else:
                 by_id[result.record.id] = SearchResult(record=result.record, score=contribution)
-    return sorted(by_id.values(), key=lambda item: (-(item.score or 0), *_stable_record_key(item)))[:limit]
+    results = sorted(by_id.values(), key=lambda item: (-(item.score or 0), *_stable_record_key(item)))[:limit]
+    return results, keyword_total + semantic_total - keyword_embedding_overlap

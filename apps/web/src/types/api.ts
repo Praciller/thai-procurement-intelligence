@@ -39,6 +39,15 @@ export type RecordsResponse = {
   page_size: number;
 };
 
+export type RecordFacets = {
+  provinces: string[];
+  categories: string[];
+};
+
+export type ApiResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: string };
+
 export type AnalyticsBucket = {
   label: string;
   count: number;
@@ -103,15 +112,18 @@ export type DatasetStatus = {
     coverage_end: string | null;
     license: string;
     sha256: string;
-    record_count_raw: number;
+    record_count_raw: number | null;
+    persisted_record_count?: number;
     mapping_version: string;
   };
   quality: null | {
-    valid_records: number;
-    rejected_records: number;
-    duplicate_records: number;
+    valid_records: number | null;
+    rejected_records: number | null;
+    duplicate_records: number | null;
     warning_records?: number;
     checksum_verified?: boolean;
+    stored_provenance_consistent?: boolean;
+    verification_note?: string;
   };
   latest_run: IngestionRun | null;
 };

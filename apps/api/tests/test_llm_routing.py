@@ -113,11 +113,17 @@ def test_primary_success_and_configured_ordering():
 
     router = ProviderRouter([first_entry, second_entry])
 
-    assert _answer(router) == "primary answer"
+    async def call_in_context():
+        answer = await router.answer_question("public project", [_record()])
+        return answer, router.provider_name
+
+    answer, selected_provider = asyncio.run(call_in_context())
+    assert answer == "primary answer"
+    assert selected_provider == "first"
     assert router.provider_names == ("first", "second")
     assert first.calls == 1
     assert second.calls == 0
-    assert router.provider_name == "first"
+    assert router.provider_name == "router"  # selection does not leak across task contexts
 
 
 def test_timeout_retries_once_then_falls_back():

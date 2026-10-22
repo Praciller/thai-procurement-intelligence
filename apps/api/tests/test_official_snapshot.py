@@ -208,6 +208,7 @@ def test_dataset_status_falls_back_to_imported_official_records(
     monkeypatch.setenv("OFFICIAL_SNAPSHOT_METADATA", str(tmp_path / "missing-metadata.json"))
     monkeypatch.setenv("OFFICIAL_QUALITY_REPORT", str(tmp_path / "missing-quality.json"))
     get_settings.cache_clear()
+
     import_rows(
         session,
         [
@@ -233,9 +234,47 @@ def test_dataset_status_falls_back_to_imported_official_records(
 
     assert response.status_code == 200
     assert response.json()["source"]["snapshot_id"] == "fixture"
-    assert response.json()["source"]["record_count_raw"] == 1
-    assert response.json()["quality"]["checksum_verified"] is True
-    assert response.json()["quality"]["valid_records"] == 1
+    assert response.json()["source"]["record_count_raw"] is None
+    assert response.json()["source"]["persisted_record_count"] == 1
+    assert response.json()["quality"]["checksum_verified"] is False
+    assert response.json()["quality"]["stored_provenance_consistent"] is True
+    assert response.json()["quality"]["valid_records"] is None
+    get_settings.cache_clear()
+
+
+def test_fallback_checksum_quality_reports_inconsistent_record_provenance(
+    client: TestClient,
+    session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    monkeypatch.setenv("DATASET_MODE", "official_snapshot")
+    monkeypatch.setenv("OFFICIAL_SNAPSHOT_METADATA", str(tmp_path / "missing-metadata.json"))
+    monkeypatch.setenv("OFFICIAL_QUALITY_REPORT", str(tmp_path / "missing-quality.json"))
+    get_settings.cache_clear()
+    common = {
+        "project_name": "Official fixture",
+        "agency_name": "Official agency",
+        "source_url": "https://data.go.th/dataset/example",
+        "source_snapshot_id": "fixture",
+        "source_license": "Creative Commons Attribution",
+        "mapping_version": "dga-egp-v1",
+    }
+    import_rows(
+        session,
+        [
+            {**common, "source_record_id": "EGP-1", "source_checksum": "a" * 64},
+            {**common, "source_record_id": "EGP-2", "source_checksum": "b" * 64},
+        ],
+        "dga_egp",
+        dataset_type="official_snapshot",
+    )
+
+    response = client.get("/api/dataset/status")
+
+    assert response.status_code == 200
+    assert response.json()["quality"]["checksum_verified"] is False
+    assert response.json()["quality"]["stored_provenance_consistent"] is False
     get_settings.cache_clear()
 
 

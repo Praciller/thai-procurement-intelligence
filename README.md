@@ -54,6 +54,12 @@ Additional search, dashboard, assistant-citation, methodology, and Thai mobile e
 - Local deterministic embeddings for semantic/hybrid retrieval demos.
 - Docker Compose with PostgreSQL JSON vector storage, API, and web services; similarity runs in application code.
 
+## Search behavior
+
+`GET /api/records/facets` returns distinct province and category values from the active dataset. Keyword search supports date and budget sorting. Semantic and hybrid searches use relevance order, return exact totals, and paginate through up to the first 5,000 ranked results. They reject a sort parameter because it would conflict with relevance order. Narrow a query to reach records beyond that ranked window.
+
+The records page and Data Status page distinguish an API outage from a successful response with no matching records. When the dataset status endpoint is unavailable or reports an unknown mode, the app shows an unavailable status instead of labeling the dataset synthetic.
+
 ## Architecture
 
 ```mermaid
@@ -140,6 +146,7 @@ docker compose exec api uv run python -m app.jobs.import_csv --file /data/sample
 Backend:
 
 - `DATABASE_URL`
+- `ENABLE_LLM` (defaults to `false`; external-call limits are process-local when enabled)
 - `ENABLE_EMBEDDINGS`
 - `CORS_ORIGINS`
 - `DATASET_MODE=synthetic|official_snapshot`

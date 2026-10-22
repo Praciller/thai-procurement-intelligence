@@ -1,13 +1,21 @@
 import { Database } from "lucide-react";
 import { EmptyState, PageHeader, Section, Stat } from "@/components/ui";
-import { formatDate, getAnalytics, getDatasetStatus, getIngestionRuns } from "@/lib/api";
+import { formatDate, getAnalyticsResult, getDatasetStatus, getIngestionRunsResult } from "@/lib/api";
 import { getDictionary, normalizeLocale } from "@/lib/i18n";
 
 export default async function DataStatusPage({ searchParams }: { searchParams?: Promise<{ lang?: string | string[] }> }) {
   const params = await searchParams;
   const locale = normalizeLocale(params?.lang);
   const dictionary = getDictionary(locale);
-  const [analytics, runs, dataset] = await Promise.all([getAnalytics(), getIngestionRuns(), getDatasetStatus()]);
+  const [analyticsResult, runsResult, datasetResult] = await Promise.all([
+    getAnalyticsResult(),
+    getIngestionRunsResult(),
+    getDatasetStatus(),
+  ]);
+  const analytics = analyticsResult.ok ? analyticsResult.data : null;
+  const runs = runsResult.ok ? runsResult.data : [];
+  const dataset = datasetResult.ok ? datasetResult.data : null;
+  const apiUnavailable = !analyticsResult.ok || !runsResult.ok || !datasetResult.ok;
 
   return (
     <Section>
@@ -15,31 +23,33 @@ export default async function DataStatusPage({ searchParams }: { searchParams?: 
         title={dictionary.dataStatus.title}
         description={dictionary.dataStatus.description}
       />
+      {apiUnavailable && <p role="status" className="mb-4 text-sm text-muted">{dictionary.dataStatus.apiUnavailable}</p>}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Stat label={dictionary.dataStatus.records} value={analytics.total_records.toLocaleString(locale === "th" ? "th-TH" : "en-US")} />
-        <Stat label={dictionary.dataStatus.ingestionRuns} value={runs.length.toLocaleString(locale === "th" ? "th-TH" : "en-US")} />
-        <Stat label={dictionary.dataStatus.latestStatus} value={runs[0]?.status || dictionary.dataStatus.noRun} />
+        <Stat label={dictionary.dataStatus.records} value={analytics?.total_records.toLocaleString(locale === "th" ? "th-TH" : "en-US") ?? dictionary.common.notAvailable} />
+        <Stat label={dictionary.dataStatus.ingestionRuns} value={runsResult.ok ? runs.length.toLocaleString(locale === "th" ? "th-TH" : "en-US") : dictionary.common.notAvailable} />
+        <Stat label={dictionary.dataStatus.latestStatus} value={runsResult.ok ? runs[0]?.status || dictionary.dataStatus.noRun : dictionary.common.notAvailable} />
       </div>
 
       <div className="mt-6 grid gap-4 rounded-lg border border-border bg-surface p-5 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          [dictionary.dataStatus.datasetMode, dataset.dataset_mode === "official_snapshot" ? dictionary.common.officialDataset : dictionary.common.syntheticDataset],
-          [dictionary.dataStatus.snapshot, dataset.source?.snapshot_id],
-          [dictionary.dataStatus.retrieved, formatDate(dataset.source?.retrieved_at, locale)],
-          [dictionary.dataStatus.coverage, dataset.source ? `${formatDate(dataset.source.coverage_start, locale)} – ${formatDate(dataset.source.coverage_end, locale)}` : null],
-          [dictionary.dataStatus.valid, dataset.quality?.valid_records],
-          [dictionary.dataStatus.rejected, dataset.quality?.rejected_records],
-          [dictionary.dataStatus.duplicates, dataset.quality?.duplicate_records],
+          [dictionary.dataStatus.datasetMode, dataset ? dataset.dataset_mode === "official_snapshot" ? dictionary.common.officialDataset : dictionary.common.syntheticDataset : dictionary.common.notAvailable],
+          [dictionary.dataStatus.snapshot, dataset?.source?.snapshot_id],
+          [dictionary.dataStatus.retrieved, formatDate(dataset?.source?.retrieved_at, locale)],
+          [dictionary.dataStatus.coverage, dataset?.source ? `${formatDate(dataset.source.coverage_start, locale)} – ${formatDate(dataset.source.coverage_end, locale)}` : null],
+          [dictionary.dataStatus.valid, dataset?.quality?.valid_records],
+          [dictionary.dataStatus.rejected, dataset?.quality?.rejected_records],
+          [dictionary.dataStatus.duplicates, dataset?.quality?.duplicate_records],
           [
             dictionary.dataStatus.freshness,
-            dataset.freshness_status === "current_snapshot"
+            dataset?.freshness_status === "current_snapshot"
               ? dictionary.dataStatus.currentSnapshot
-              : dataset.freshness_status === "stale_snapshot"
+              : dataset?.freshness_status === "stale_snapshot"
                 ? dictionary.dataStatus.staleSnapshot
                 : dictionary.common.notAvailable,
           ],
-          [dictionary.dataStatus.checksum, dataset.quality?.checksum_verified ? dictionary.dataStatus.verified : dictionary.common.notAvailable],
-          [dictionary.dataStatus.mappingVersion, dataset.source?.mapping_version],
+          [dictionary.dataStatus.checksum, dataset?.quality?.checksum_verified ? dictionary.dataStatus.verified : dictionary.common.notAvailable],
+          [dictionary.dataStatus.provenanceConsistent, dataset?.quality?.stored_provenance_consistent ? dictionary.dataStatus.verified : dictionary.common.notAvailable],
+          [dictionary.dataStatus.mappingVersion, dataset?.source?.mapping_version],
         ].map(([label, value]) => (
           <div key={String(label)}>
             <div className="text-xs uppercase tracking-wide text-muted">{label}</div>
@@ -53,7 +63,9 @@ export default async function DataStatusPage({ searchParams }: { searchParams?: 
           <Database size={18} className="text-accent-strong" />
           <h2 className="text-base font-semibold">{dictionary.dataStatus.recentRuns}</h2>
         </div>
-        {runs.length ? (
+        {!runsResult.ok ? (
+          <p role="status" className="text-sm text-muted">{dictionary.dataStatus.apiUnavailable}</p>
+        ) : runs.length ? (
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
               <thead className="text-xs uppercase tracking-wide text-muted">

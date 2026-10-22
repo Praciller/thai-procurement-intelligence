@@ -4,6 +4,7 @@ import asyncio
 import logging
 import re
 from collections.abc import Awaitable, Callable, Sequence
+from contextvars import ContextVar
 from dataclasses import dataclass
 from time import monotonic
 
@@ -29,12 +30,36 @@ class ProviderRouter(LLMProvider):
     def __init__(self, entries: Sequence[ProviderEntry], *, deterministic_evaluation: bool = False) -> None:
         self.entries = tuple(entries)
         self.deterministic_evaluation = deterministic_evaluation
-        self.provider_name = "router"
-        self.model_name = "fallback"
+        self._selected_provider: ContextVar[LLMProvider | None] = ContextVar(f"llm_provider_{id(self)}", default=None)
+
+    @property
+    def provider_name(self) -> str:
+        provider = self._selected_provider.get()
+        return provider.provider_name if provider else "router"
+
+    @property
+    def model_name(self) -> str:
+        provider = self._selected_provider.get()
+        return provider.model_name if provider else "fallback"
 
     @property
     def provider_names(self) -> tuple[str, ...]:
         return tuple(entry.config.name for entry in self.entries)
+
+    @property
+    def cache_identity(self) -> str:
+        return "|".join(f"{entry.config.name}:{entry.config.model}" for entry in self.entries)
+
+    @property
+    def cache_provider_names(self) -> tuple[str, ...]:
+        return tuple(dict.fromkeys(entry.config.name for entry in self.entries))
+
+    @property
+    def is_external(self) -> bool:
+        provider = self._selected_provider.get()
+        if provider is not None:
+            return provider.is_external
+        return any(entry.provider.is_external for entry in self.entries)
 
     async def generate_summary(self, record: ProcurementRecord) -> str:
         return await self._run(
@@ -135,8 +160,7 @@ class ProviderRouter(LLMProvider):
                         continue
                     break
                 else:
-                    self.provider_name = entry.provider.provider_name
-                    self.model_name = entry.provider.model_name
+                    self._selected_provider.set(entry.provider)
                     logger.info(
                         "llm_provider_result provider=%s model=%s operation=%s attempt=%d duration_ms=%d "
                         "result=success fallback_from=%s",

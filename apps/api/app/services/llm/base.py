@@ -8,6 +8,14 @@ class LLMProvider(ABC):
     model_name: str
 
     @property
+    def cache_identity(self) -> str:
+        return f"{self.provider_name}:{self.model_name}"
+
+    @property
+    def cache_provider_names(self) -> tuple[str, ...]:
+        return (self.provider_name,)
+
+    @property
     def is_external(self) -> bool:
         return self.provider_name != "mock"
 

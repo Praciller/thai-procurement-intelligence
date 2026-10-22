@@ -54,6 +54,11 @@ class RecordsResponse(BaseModel):
     page_size: int
 
 
+class RecordFacets(BaseModel):
+    provinces: list[str]
+    categories: list[str]
+
+
 class IngestionRunResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -101,11 +106,25 @@ class SemanticSearchRequest(BaseModel):
     limit: int = Field(10, ge=1, le=50)
 
 
+class AssistantFilters(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    q: str | None = Field(None, max_length=200)
+    province: str | None = Field(None, max_length=120)
+    agency: str | None = Field(None, max_length=200)
+    category: str | None = Field(None, max_length=160)
+    method: str | None = Field(None, max_length=160)
+    min_budget: Decimal | None = Field(None, ge=0, le=Decimal("1000000000000000"))
+    max_budget: Decimal | None = Field(None, ge=0, le=Decimal("1000000000000000"))
+    date_from: date | None = None
+    date_to: date | None = None
+
+
 class AssistantRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    question: str = Field(min_length=1)
-    filters: dict[str, Any] | None = None
+    question: str = Field(min_length=1, max_length=500)
+    filters: AssistantFilters | None = None
     limit: int = Field(8, ge=1, le=12)
 
 

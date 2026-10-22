@@ -56,14 +56,22 @@ def _official_record_evidence(session: Session) -> tuple[dict | None, dict | Non
         "coverage_end": coverage_end.isoformat() if coverage_end else None,
         "license": record.source_license,
         "sha256": record.source_checksum,
-        "record_count_raw": count,
+        "record_count_raw": None,
+        "persisted_record_count": count,
         "mapping_version": record.mapping_version,
     }
+    stored_provenance_consistent = count > 0 and checksum_count == count and distinct_checksums == 1
     quality = {
-        "checksum_verified": count > 0 and checksum_count == count and distinct_checksums == 1,
-        "valid_records": count,
-        "rejected_records": 0,
-        "duplicate_records": 0,
+        "checksum_verified": False,
+        "stored_provenance_consistent": stored_provenance_consistent,
+        "verification_note": (
+            "Stored checksums agree; source file bytes were not rehashed in this fallback."
+            if stored_provenance_consistent
+            else "Stored checksums disagree or are missing; source file bytes were not rehashed in this fallback."
+        ),
+        "valid_records": None,
+        "rejected_records": None,
+        "duplicate_records": None,
     }
     return source, quality
 
