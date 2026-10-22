@@ -97,14 +97,14 @@ class SummaryResponse(BaseModel):
 class SemanticSearchRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    query: str = Field(min_length=1)
+    query: str = Field(min_length=1, max_length=1000)
     limit: int = Field(10, ge=1, le=50)
 
 
 class AssistantRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    question: str = Field(min_length=1)
+    question: str = Field(min_length=1, max_length=1000)
     filters: dict[str, Any] | None = None
     limit: int = Field(8, ge=1, le=12)
 
