@@ -1,4 +1,4 @@
-# Production Backup, Restore and Release Gate — 2026-10-23
+# Production Backup, Restore and Release Gate — 2026-10-24
 
 > **Operator-only handoff. Not authorization to run SQL, switch traffic, or deploy.**
 > Never commit backups, database URLs, passwords, API keys, screenshots with secrets, or `.env` files to Git.
@@ -16,13 +16,13 @@
 | Hosted stable endpoint | `https://thai-procurement-intelligence.vercel.app` |
 | Stable API | `/backend/api/health`, `/backend/api/dataset/status`, `/backend/api/records?page_size=1` |
 | Source state | `official_snapshot`, `stale_snapshot`, 250 official records |
-| Release candidate | Draft PR #44, reviewed head `e44a0b715bb881e17397dcb780b627b3c49fab8d` |
+| Release candidate | Draft PR #44; use the current PR head and current CI status |
 
 The checks above do **not** mean a new release has happened. A previously deployed Vercel production build remains in service. The project is linked to GitHub; **assume main merges may trigger automation** until deployment targeting and production branch mapping are explicitly verified.
 
-## Gate A: verified, restorable backup — BLOCKED
+## Gate A: logical backup exported; restore and portability — BLOCKED
 
-Supabase documents that the **Free plan has no guaranteed scheduled database backups**. Export a logical snapshot before any new production migrations. The connected Supabase tools in this review do not provide a database-backup export or restore action; the workstation had no authenticated Supabase CLI available during inspection.
+Supabase documents that the **Free plan has no guaranteed scheduled database backups**. On 2026-10-24, authenticated Supabase CLI access on `pracill` became available, and a production logical export was completed and encrypted. **Archive integrity alone is not restore verification.** No live production SQL writes or migration occurred.
 
 1. On the trusted operator computer, install/verify the official Supabase CLI and Docker Desktop; authenticate interactively with `supabase login` and link the exact production project with `supabase link --project-ref eojfchphzmgspybmugzq`. Never paste credentials in ChatGPT or into repository files.
 2. Create a **private local backup folder outside Git/OneDrive public sharing** and record the UTC timestamp and project reference. Run the following commands **inside that folder**, using an already authenticated/link-confirmed CLI:
@@ -102,4 +102,18 @@ For an authorized preview session, verify:
 
 ## Workstation CLI readiness — 2026-10-24
 
-On `pracill`, Docker is reachable and the official Supabase CLI can run through `npx --yes supabase` (verified version `2.122.0`). The CLI has **not** been authenticated: its read-only `projects list` reports that an access token is required. No token or connection string was inspected or printed. After the operator signs in interactively on that trusted computer, use the documented export/restore procedure above. The Supabase connector's API authorization cannot be assumed to transfer to an unrelated local CLI session.
+On `pracill`, Docker is reachable and the official Supabase CLI runs via `npx --yes supabase` (verified version `2.122.0`). A read-only `projects list` now succeeds and lists the expected project. No token or database URL was printed. The connected Supabase account and local CLI credentials remain separate authentication contexts.
+
+### Completed backup export and local encryption (2026-10-24)
+
+- Private backup ID: `pre0003-20261024-005819`. Stored under the owner's Windows `LOCALAPPDATA` profile with a restricted directory ACL; **not** uploaded to GitHub or this chat.
+- The CLI exported the `public` application schema (`schema.sql`: 14,585 bytes), roles (`roles.sql`: 358 bytes), and `public` data (`data.sql`: 676,206 bytes) directly from the production project in read-only mode. This is **not** a full Supabase-managed Auth/Storage backup.
+- Parsed the actual `COPY` sections without printing their rows: **370 procurement records = 250 official + 120 synthetic**; additional sections include ingestion runs, summaries, embeddings, logs and Alembic revision table.
+- Created `production-pre0003.7z` (61,984 bytes) with encrypted headers and a freshly generated 288-bit passphrase. Verified the encrypted archive with `7z t`. Archive SHA-256: `1E7C4BBB126FD71DE961789DE6B54DB83DF4A7218C973FC4B1B4BA5EECD30711`.
+- The passphrase is saved **only** as a Windows DPAPI `CurrentUser`-protected blob in `archive-password.dpapi`. The plaintext SQL exports were then removed. **Critical limitation:** DPAPI is bound to the current Windows profile/machine key. There is not yet a portable, separately stored recovery key or off-device copy. Do not treat this as disaster-recovery ready.
+- Attempting to execute the SQL restore inside an isolated PostgreSQL 17 Docker container was blocked by the remote execution tool's safety checks. **No SQL restore was run**, and the container was stopped and removed. This is **not** evidence of a restore failure in the SQL files; it remains **untested**. See `backup-manifest.json` inside the owner's private backup folder for metadata and local artifact hashes.
+- **STOP:** Production release still requires a successful, independently checked isolated restore, a portable recovery key kept securely outside the machine, and a protected off-device copy. Do not run the production Alembic migration until those gates are complete.
+
+### Preview isolation
+
+The protected Vercel Preview remains database-unready (readiness HTTP 503 and data endpoints HTTP 500) because there is no Preview-specific `DATABASE_URL`. No production URL was copied to Preview. The connected Neon account showed no matching procurement projects; querying Supabase development branches returned insufficient permission, so this does **not** prove that no branches exist. Use an explicitly approved, independently isolated Preview database rather than reusing production credentials.
