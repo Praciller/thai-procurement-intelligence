@@ -7,7 +7,7 @@ import { BarChart3, Bot, Database, FileSearch, Info, Landmark } from "lucide-rea
 import { getDictionary, languages, normalizeLocale, withLocale } from "@/lib/i18n";
 import type { DatasetStatus } from "@/types/api";
 
-export function AppShell({ children, dataset }: { children: React.ReactNode; dataset: DatasetStatus }) {
+export function AppShell({ children, dataset }: { children: React.ReactNode; dataset: DatasetStatus | null }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const locale = normalizeLocale(searchParams.get("lang"));
@@ -90,14 +90,18 @@ export function AppShell({ children, dataset }: { children: React.ReactNode; dat
       <div className="border-b border-border bg-surface">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-xs sm:px-6 lg:px-8">
           <span className="font-semibold">
-            {dataset.dataset_mode === "official_snapshot"
+            {dataset?.dataset_mode === "official_snapshot"
               ? dictionary.common.officialDataset
-              : dictionary.common.syntheticDataset}
+              : dataset?.dataset_mode === "synthetic"
+                ? dictionary.common.syntheticDataset
+                : dictionary.common.unknownDataset}
           </span>
           <span className="text-muted">
-            {dataset.dataset_mode === "official_snapshot"
+            {dataset?.dataset_mode === "official_snapshot"
               ? dictionary.common.officialDatasetNote
-              : dictionary.common.syntheticDatasetNote}
+              : dataset?.dataset_mode === "synthetic"
+                ? dictionary.common.syntheticDatasetNote
+                : dictionary.common.unknownDatasetNote}
           </span>
         </div>
       </div>
