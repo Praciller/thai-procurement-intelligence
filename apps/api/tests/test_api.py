@@ -334,3 +334,45 @@ def test_records_search_does_not_expand_raw_sql_like_metacharacters(
         assert response.status_code == 200
         assert response.json()["items"] == []
         assert response.json()["total"] == 0
+
+
+
+def test_embedding_write_requires_explicit_admin_token(
+    client: TestClient, session: Session, monkeypatch: pytest.MonkeyPatch
+):
+    from types import SimpleNamespace
+
+    from app.models import ProcurementEmbedding
+
+    import_rows(session, [{"source_record_id": "AUTH-1", "project_name": "Authorized embedding fixture"}], "unit")
+    record = session.scalar(select(ProcurementRecord).where(ProcurementRecord.source_record_id == "AUTH-1"))
+    assert record is not None
+    url = f"/api/records/{record.id}/embedding"
+
+    # The endpoint is disabled unless a server-side token is configured.
+    monkeypatch.setattr(
+        "app.routers.records.get_settings",
+        lambda: SimpleNamespace(dataset_mode="synthetic", admin_ingestion_token=None),
+    )
+    assert client.post(url).status_code == 403
+    assert client.post(url, headers={"X-Admin-Token": "invented"}).status_code == 403
+
+    # Incorrect and absent headers must never persist an embedding.
+    monkeypatch.setattr(
+        "app.routers.records.get_settings",
+        lambda: SimpleNamespace(dataset_mode="synthetic", admin_ingestion_token="unit-test-token"),
+    )
+    assert client.post(url).status_code == 403
+    assert client.post(url, headers={"X-Admin-Token": "incorrect"}).status_code == 403
+    assert session.scalar(
+        select(ProcurementEmbedding).where(ProcurementEmbedding.procurement_id == record.id)
+    ) is None
+
+    permitted = client.post(url, headers={"X-Admin-Token": "unit-test-token"})
+    repeated = client.post(url, headers={"X-Admin-Token": "unit-test-token"})
+    assert permitted.status_code == repeated.status_code == 200
+    assert permitted.json()["model"] == "hashing-token-v1"
+    assert permitted.json()["id"] == repeated.json()["id"]
+    assert len(session.scalars(
+        select(ProcurementEmbedding).where(ProcurementEmbedding.procurement_id == record.id)
+    ).all()) == 1
