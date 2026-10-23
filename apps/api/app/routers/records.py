@@ -11,18 +11,14 @@ from app.schemas import ProcurementRecordDetail, RecordFacets, RecordsResponse, 
 from app.services.embeddings import ensure_embedding, hash_embedding
 from app.services.llm.factory import get_llm_provider
 from app.services.llm.limits import enforce_external_prompt_limit
-from app.services.llm.prompts import summary_messages
+from app.services.llm.prompts import summary_cache_version, summary_messages
 from app.services.llm.budget import protect_external_inference
 from app.services.search import grounded_local_semantic_candidates, hybrid_candidates, keyword_candidates, normalize_retrieval_terms, search_records
 
 router = APIRouter(prefix="/records", tags=["records"])
 semantic_router = APIRouter(prefix="/search", tags=["search"])
-SUMMARY_PROMPT_VERSION = "summary-v2"
-
-
 def _summary_version(record: ProcurementRecord) -> str:
-    # Invalidate cached output whenever imported source content changes.
-    return f"{SUMMARY_PROMPT_VERSION}-{record.content_hash[:16]}"
+    return summary_cache_version(record)
 
 
 
