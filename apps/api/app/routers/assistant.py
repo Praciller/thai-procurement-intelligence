@@ -7,6 +7,8 @@ from app.models import AIQALog
 from app.schemas import AssistantRequest, AssistantResponse, Citation, ProcurementRecordListItem
 from app.services.embeddings import hash_embedding
 from app.services.llm.factory import get_llm_provider
+from app.services.llm.limits import enforce_external_prompt_limit
+from app.services.llm.prompts import question_messages
 from app.services.llm.budget import protect_external_inference
 from app.services.search import hybrid_candidates, keyword_candidates, normalize_assistant_query
 
@@ -19,9 +21,10 @@ async def ask(request: AssistantRequest, session: Session = Depends(get_session)
     settings = get_settings()
     retrieval_query = normalize_assistant_query(request.question)
     embedding = hash_embedding(retrieval_query) if settings.enable_embeddings and retrieval_query else None
-    candidates = hybrid_candidates(session, retrieval_query, embedding, limit=request.limit, filters=request.filters)
+    filters = request.filters.model_dump(exclude_none=True, mode="json") if request.filters else None
+    candidates = hybrid_candidates(session, retrieval_query, embedding, limit=request.limit, filters=filters)
     if not candidates:
-        candidates = keyword_candidates(session, retrieval_query, limit=request.limit, filters=request.filters)
+        candidates = keyword_candidates(session, retrieval_query, limit=request.limit, filters=filters)
     records = [candidate.record for candidate in candidates]
 
     if not records:
@@ -32,7 +35,9 @@ async def ask(request: AssistantRequest, session: Session = Depends(get_session)
             retrieved_records=[],
         )
 
-    provider = protect_external_inference(session, get_llm_provider(settings), settings)
+    provider = get_llm_provider(settings)
+    enforce_external_prompt_limit(provider, settings, question_messages(request.question, records))
+    provider = protect_external_inference(session, provider, settings)
     answer = await provider.answer_question(request.question, records)
 
     if settings.log_ai_queries:
