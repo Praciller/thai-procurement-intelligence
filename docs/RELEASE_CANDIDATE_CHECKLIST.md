@@ -4,7 +4,7 @@ This is an operator checklist, not a release approval. The project currently has
 
 ## Proposed review order
 
-`#26 → #29 → #27 → #28 → #30 → #31 → #32 → #33 → #34 → #35 → #36 → #37 → #38 → #39 → #40`.
+`#26 → #29 → #27 → #28 → #30 → #31 → #32 → #33 → #34 → #35 → #36 → #37 → #38 → #39 → #40 → #41`.
 
 Draft PRs #24 and #25 predate this stack and overlap the same evidence/search/LLM paths. Do not merge either independently or automatically; reconcile any unique fixes against the current stack, then explicitly close or supersede them after review.
 
@@ -33,7 +33,9 @@ The base branch of every stacked PR must point to its immediate predecessor unti
 - [ ] If an earlier runtime created `ai_hourly_budget` while Alembic still reports `0002`, migration `0003` validates the existing column and key structure and adopts it only when identical. Treat schema mismatch as an explicit stop rather than using `alembic stamp` or dropping tables blindly.
 - [ ] Verify runtime database privileges and backup/restore procedure. Do not run `alembic downgrade` automatically on a database containing new data.
 - [ ] Set explicit `AI_HOURLY_REQUEST_LIMIT` and keep `LOG_AI_QUERIES=false` if a later release enables external LLMs. The budget counts *external-capable requests*, not every provider retry, so authentication/edge abuse protection may still be needed.
-- [ ] Check CORS and public write endpoints against the intended deployment threat model before exposing external inference. Verify `POST /api/records/{id}/embedding` refuses requests unless `ADMIN_INGESTION_TOKEN` is set and the `X-Admin-Token` request header matches.
+- [ ] Check CORS and public write endpoints against the intended deployment threat model before exposing external inference.
+- [ ] Check Assistant rejects malformed filter types, unknown keys, unsupported nested input, invalid dates and reversed budget/date ranges with HTTP 422 rather than 500.
+- [ ] Check External LLM prompt size is enforced on the entire assembled context at 24,000 characters (HTTP 413), before reserving an inference permit, even for mock-first router fallback chains. This is not a substitute for per-client abuse protection. Verify `POST /api/records/{id}/embedding` refuses requests unless `ADMIN_INGESTION_TOKEN` is set and the `X-Admin-Token` request header matches.
 - [ ] Check synthetic/official dataset isolation and freshness of the official data-source snapshot.
 
 ## Post-deployment and rollback
