@@ -62,7 +62,26 @@ References:
 
 PR #44 GitHub API, web, e2e, and guardrails checks passed. A Vercel Preview deployment was **READY** for the release branch after explicit `nextjs` / `fastapi` service framework pins fixed `MULTIPLE_FRAMEWORKS_SERVICE`. This proves build completion, **not** authenticated API/database operation.
 
-The protected preview hostname returned HTTP `302` for the root and API paths during a read-only check. Validate by signing in through the authorized deployment-protection flow or explicitly provision an approved, isolated preview access path. Do **not** disable project-wide deployment protection or place production DB credentials into public preview variables.
+### Authenticated runtime findings — 2026-10-24
+
+Using the connected Vercel account's **protected-deployment fetch** (without sharing any access-bypass link or weakening project protection), the exact release preview deployment `dpl_H1Sjr6FnKXCYKKJNR8ctpYSq8NdB` returned:
+
+| Preview endpoint | Status | Meaning |
+| --- | --- | --- |
+| `/` | 200 | Next.js HTML is served |
+| `/backend/api/health` | 200 | FastAPI process responds; **not** DB readiness |
+| `/backend/api/health/readiness` | 503 | JSON `database unavailable` |
+| `/backend/api/dataset/status` | 500 | SQLAlchemy DB connection fails |
+| `/backend/api/records?page_size=1` | 500 | SQLAlchemy DB connection fails |
+| `/records?lang=th` | 200 | Correct Thai API-unavailable and unknown-dataset messaging |
+| `/dashboard?lang=en` | 200 | Correct English API-unavailable and unknown-dataset messaging |
+| `/data-status?lang=th` | 200 | Correct Thai API-unavailable and unknown-dataset messaging |
+
+Vercel runtime logs show SQLAlchemy failing to connect on dataset and records routes. **Configuration evidence**: `DATABASE_URL`, `NEXT_PUBLIC_API_BASE_URL`, `DATASET_MODE` and the external LLM settings are currently scoped to **production only**, not Preview. With no Preview `DATABASE_URL`, the API falls back to its local SQLite default `sqlite:///./thai_procurement_demo.db`, which does not provide a ready migrated persistent database in serverless Preview. The full exception cause was not independently established; the missing Preview DB configuration and 503 readiness are verified.
+
+**Do not copy or expose Production `DATABASE_URL` to Preview.** Provision an independently isolated Preview database (subject to explicit resource/cost approval), apply `alembic upgrade head` and seed only **synthetic fixture** rows. Set Preview-only `DATABASE_URL`, `NEXT_PUBLIC_API_BASE_URL=/backend/api`, `DATASET_MODE=synthetic`, `ENABLE_LLM=false` and `LOG_AI_QUERIES=false`. No external model credentials should be enabled in Preview. Redeploy **Preview only** and recheck the endpoints above plus the Browser E2E flow.
+
+This is a **confirmed release blocker**, not a reason to change the production database. Protected Preview access is solved; **Preview database readiness is not**.
 
 For an authorized preview session, verify:
 - HTML route, server-rendered data widgets, all major EN/TH screens and accessible keyboard flows
@@ -80,3 +99,7 @@ For an authorized preview session, verify:
 6. Restore production traffic to the previously recorded deployment on failure; database rollback may need the verified logical backup. **Never drop `ai_hourly_budget` or run `alembic downgrade` blindly** when live data has been written.
 
 **Current decision: HOLD production merge/deployment and schema migration until Gates A and C are verified.**
+
+## Workstation CLI readiness — 2026-10-24
+
+On `pracill`, Docker is reachable and the official Supabase CLI can run through `npx --yes supabase` (verified version `2.122.0`). The CLI has **not** been authenticated: its read-only `projects list` reports that an access token is required. No token or connection string was inspected or printed. After the operator signs in interactively on that trusted computer, use the documented export/restore procedure above. The Supabase connector's API authorization cannot be assumed to transfer to an unrelated local CLI session.
