@@ -5,7 +5,8 @@
  */
 export function requireKnownDatasetMode(result) {
   if (!result.ok) return result;
-  const mode = /** @type {{ dataset_mode?: unknown }} */ (result.data).dataset_mode;
+  const data = /** @type {{ dataset_mode?: unknown } | null | undefined }} */ (result.data);
+  const mode = data && typeof data === "object" ? data.dataset_mode : undefined;
   if (mode !== "synthetic" && mode !== "official_snapshot") {
     return { ok: false, error: "API returned an unsupported dataset mode" };
   }
