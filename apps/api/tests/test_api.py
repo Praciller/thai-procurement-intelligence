@@ -376,3 +376,54 @@ def test_embedding_write_requires_explicit_admin_token(
     assert len(session.scalars(
         select(ProcurementEmbedding).where(ProcurementEmbedding.procurement_id == record.id)
     ).all()) == 1
+
+
+def test_summary_cache_invalidates_after_prompt_template_changes(
+    client: TestClient, session: Session, monkeypatch: pytest.MonkeyPatch
+):
+    from app.models import AISummary
+    from app.services.llm import prompts
+
+    seed(session)
+    record_id = client.get("/api/records?q=cybersecurity").json()["items"][0]["id"]
+    first = client.post(f"/api/records/{record_id}/summary")
+    cached = client.post(f"/api/records/{record_id}/summary")
+    assert first.status_code == cached.status_code == 200
+    assert first.json()["cached"] is False
+    assert cached.json()["cached"] is True
+
+    original = prompts._SUMMARY_TEMPLATE
+    assert "5 bullet points" in original
+    monkeypatch.setattr(
+        prompts, "_SUMMARY_TEMPLATE",
+        original.replace("5 bullet points", "4 bullet points"),
+    )
+    detail = client.get(f"/api/records/{record_id}")
+    assert detail.status_code == 200
+    assert detail.json()["ai_summary"] is None
+
+    refreshed = client.post(f"/api/records/{record_id}/summary")
+    assert refreshed.status_code == 200
+    assert refreshed.json()["cached"] is False
+    assert client.post(f"/api/records/{record_id}/summary").json()["cached"] is True
+
+    rows = session.scalars(
+        select(AISummary).where(AISummary.procurement_id == record_id)
+    ).all()
+    assert len(rows) == 2
+    assert len({row.prompt_version for row in rows}) == 2
+    assert all(len(row.prompt_version) <= 40 for row in rows)
+
+
+def test_rendered_summary_cache_key_changes_with_record_context_without_content_hash_change(
+    session: Session
+):
+    from app.services.llm.prompts import summary_cache_version
+
+    seed(session)
+    record = session.scalar(select(ProcurementRecord))
+    original_key = summary_cache_version(record)
+    record.raw_text = "A materially different source description"
+    assert summary_cache_version(record) != original_key
+    assert original_key.startswith("summary-v3-")
+    assert len(original_key) == 40
