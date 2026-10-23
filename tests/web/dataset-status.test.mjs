@@ -16,3 +16,13 @@ test("accepts only supported dataset modes", () => {
 
   assert.equal(requireKnownDatasetMode(official), official);
 });
+
+test("null and malformed dataset responses are unavailable rather than crashing", () => {
+  for (const data of [null, {}, { dataset_mode: "legacy" }]) {
+    const outcome = requireKnownDatasetMode({ ok: true, data });
+    assert.deepEqual(outcome, {
+      ok: false,
+      error: "API returned an unsupported dataset mode",
+    });
+  }
+});
