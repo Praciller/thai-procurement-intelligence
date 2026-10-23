@@ -4,7 +4,7 @@ This is an operator checklist, not a release approval. The project currently has
 
 ## Proposed review order
 
-`#26 → #29 → #27 → #28 → #30 → #31 → #32 → #33 → #34 → #35 → #36 → #37 → #38 → #39 → #40 → #41`.
+`#26 → #29 → #27 → #28 → #30 → #31 → #32 → #33 → #34 → #35 → #36 → #37 → #38 → #39 → #40 → #41 → #42`.
 
 Draft PRs #24 and #25 predate this stack and overlap the same evidence/search/LLM paths. Do not merge either independently or automatically; reconcile any unique fixes against the current stack, then explicitly close or supersede them after review.
 
@@ -35,7 +35,8 @@ The base branch of every stacked PR must point to its immediate predecessor unti
 - [ ] Set explicit `AI_HOURLY_REQUEST_LIMIT` and keep `LOG_AI_QUERIES=false` if a later release enables external LLMs. The budget counts *external-capable requests*, not every provider retry, so authentication/edge abuse protection may still be needed.
 - [ ] Check CORS and public write endpoints against the intended deployment threat model before exposing external inference.
 - [ ] Check Assistant rejects malformed filter types, unknown keys, unsupported nested input, invalid dates and reversed budget/date ranges with HTTP 422 rather than 500.
-- [ ] Check External LLM prompt size is enforced on the entire assembled context at 24,000 characters (HTTP 413), before reserving an inference permit, even for mock-first router fallback chains. This is not a substitute for per-client abuse protection. Verify `POST /api/records/{id}/embedding` refuses requests unless `ADMIN_INGESTION_TOKEN` is set and the `X-Admin-Token` request header matches.
+- [ ] Check External LLM prompt size is enforced on the entire assembled context at 24,000 characters (HTTP 413), before reserving an inference permit, even for mock-first router fallback chains. This is not a substitute for per-client abuse protection.
+- [ ] Confirm record summaries use a deterministic 40-character cache key derived from the **rendered prompt messages and record content hash**. Prompt template edits invalidate the old cache, even when the stored record content hash remains unchanged. The migration from old summary-v2 keys to summary-v3 keys deliberately regenerates summaries when first requested; existing rows are preserved. Verify `POST /api/records/{id}/embedding` refuses requests unless `ADMIN_INGESTION_TOKEN` is set and the `X-Admin-Token` request header matches.
 - [ ] Check synthetic/official dataset isolation and freshness of the official data-source snapshot.
 
 ## Post-deployment and rollback
