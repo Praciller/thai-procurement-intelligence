@@ -71,9 +71,9 @@ jobs:
       - run: npm run web:build
 
   e2e:
-    runs-on: ubuntu-latest
-    # The Chromium setup occasionally stalls; surface a failed check instead
-    # of leaving a PR job running indefinitely.
+    # Pinned image includes Google Chrome and system browser dependencies.
+    # Avoid --with-deps apt downloads that previously stalled E2E jobs.
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     services:
       db:
@@ -159,7 +159,10 @@ jobs:
         working-directory: apps/api
       - run: npm --prefix apps/web ci
       - run: npm run web:build
-      - run: npx playwright install --with-deps chromium
+      - name: Verify preinstalled Google Chrome
+        run: |
+          command -v google-chrome
+          google-chrome --version
       - name: Start API
         working-directory: apps/api
         run: uv run uvicorn app.main:app --port 8000 &
@@ -177,7 +180,8 @@ jobs:
             sleep 2
           done
           echo "Services did not become ready"; exit 1
-      - run: npm run e2e:smoke
+      - name: Run browser E2E in preinstalled Chrome
+        run: npm run e2e:smoke -- --config=playwright.ci.config.cjs
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
