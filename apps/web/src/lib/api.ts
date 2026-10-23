@@ -73,23 +73,6 @@ export function formatDate(value: string | null | undefined, locale = "en") {
   return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-GB", { year: "numeric", month: "short", day: "2-digit" }).format(new Date(value));
 }
 
-export const emptyRecords: RecordsResponse = { items: [], total: 0, page: 1, page_size: 20 };
-
-export const emptyAnalytics: AnalyticsOverview = {
-  total_records: 0,
-  total_budget: 0,
-  average_budget: 0,
-  records_by_province: [],
-  records_by_category: [],
-  records_by_month: [],
-  top_agencies: [],
-  top_projects: [],
-};
-
-export function getRecords(query = "") {
-  return safeApiFetch<RecordsResponse>(`/records${query}`, emptyRecords, { cache: "no-store" });
-}
-
 export function getRecordsResult(query = "") {
   return safeApiFetchResult<RecordsResponse>(`/records${query}`, { cache: "no-store" });
 }
@@ -97,10 +80,6 @@ export function getRecordsResult(query = "") {
 /** Client-side searches must not treat an unavailable API as an empty result set. */
 export function searchRecords(query = "") {
   return apiFetch<RecordsResponse>(`/records${query}`, { cache: "no-store" });
-}
-
-export function getRecordFacets() {
-  return safeApiFetch<RecordFacets>("/records/facets", { provinces: [], categories: [] }, { cache: "no-store" });
 }
 
 export function getRecordFacetsResult() {
@@ -115,16 +94,8 @@ export function getSimilar(id: string) {
   return safeApiFetch<ProcurementRecord[]>(`/records/${id}/similar`, [], { cache: "no-store" });
 }
 
-export function getAnalytics() {
-  return safeApiFetch<AnalyticsOverview>("/analytics/overview", emptyAnalytics, { cache: "no-store" });
-}
-
 export function getAnalyticsResult() {
   return safeApiFetchResult<AnalyticsOverview>("/analytics/overview", { cache: "no-store" });
-}
-
-export function getIngestionRuns() {
-  return safeApiFetch<IngestionRun[]>("/ingestion/status", [], { cache: "no-store" });
 }
 
 export function getIngestionRunsResult() {
