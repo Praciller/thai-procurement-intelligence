@@ -40,6 +40,11 @@ The public summary and cited-answer paths are deterministic and require no exter
 - CSV export prefixes cells beginning with `=`, `+`, `-`, or `@` to prevent spreadsheet formula execution.
 - React escapes displayed source text.
 
+## Assistant input and optional inference limits
+
+- External-capable LLM paths validate the assembled system/user prompt, including retrieved record context, before reserving the shared hourly budget. Payloads exceeding 24,000 characters return HTTP 413 and do not contact external providers. This cap also protects mock-first chains that might fall back externally; offline-only mock responses are unaffected.
+- The Assistant accepts only typed, documented filters (`province`, `agency`, `category`, `method`, `min_budget`, `max_budget`, `date_from`, `date_to`); invalid types, unknown keys, reversed ranges, and malformed dates return HTTP 422. The global hourly budget is not per-user throttling. Leave external LLMs disabled until abuse controls and deployment threat modeling are reviewed.
+
 ## Ethics
 
 Public records are not proof of wrongdoing. Agency or vendor names must not be ranked as suspicious without a separately validated methodology. Generated summaries require review against official records. The snapshot may be incomplete or stale, and procurement decisions require verification at the official source.
