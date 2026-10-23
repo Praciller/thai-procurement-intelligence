@@ -33,7 +33,7 @@ The public summary and cited-answer paths are deterministic and require no exter
 
 ## Data ingestion and export
 
-- Public ingestion is disabled unless a server-side `ADMIN_INGESTION_TOKEN` is configured and supplied.
+- Public ingestion and the database-writing `POST /api/records/{id}/embedding` endpoint are disabled unless a server-side `ADMIN_INGESTION_TOKEN` is configured and supplied as the `X-Admin-Token` request header. Read-only search and mock assistant behavior do not require this token.
 - Uploads accept CSV content types only, stop above 2 MB, and delete temporary files after processing.
 - Automated acquisition is hard-coded to the approved `data.go.th` HTTPS URL, uses a timeout and 1 MiB response limit, validates content type, and verifies SHA-256 before import.
 - The public API does not accept arbitrary acquisition URLs or filesystem paths.
