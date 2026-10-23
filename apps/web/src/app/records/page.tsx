@@ -1,17 +1,24 @@
 import { RecordsClient } from "@/components/records-client";
 import { DemoNotice, PageHeader, Section } from "@/components/ui";
-import { getDatasetStatus, getRecordFacets, getRecords } from "@/lib/api";
+import { getDatasetStatusResult, getRecordFacetsResult, getRecordsResult } from "@/lib/api";
+import { ApiUnavailable } from "@/components/api-unavailable";
 import { getDictionary, normalizeLocale } from "@/lib/i18n";
 
 export default async function RecordsPage({ searchParams }: { searchParams?: Promise<{ lang?: string | string[] }> }) {
   const params = await searchParams;
   const locale = normalizeLocale(params?.lang);
   const dictionary = getDictionary(locale);
-  const [records, dataset, facets] = await Promise.all([
-    getRecords("?page_size=20"),
-    getDatasetStatus(),
-    getRecordFacets(),
+  const [recordsResult, datasetResult, facetsResult] = await Promise.all([
+    getRecordsResult("?page_size=20"),
+    getDatasetStatusResult(),
+    getRecordFacetsResult(),
   ]);
+  if (!recordsResult.ok || !datasetResult.ok || !facetsResult.ok) {
+    return <Section><PageHeader title={dictionary.recordsPage.title} description={dictionary.recordsPage.description} /><div className="mt-6"><ApiUnavailable locale={locale} /></div></Section>;
+  }
+  const records = recordsResult.data;
+  const dataset = datasetResult.data;
+  const facets = facetsResult.data;
 
   return (
     <Section>
