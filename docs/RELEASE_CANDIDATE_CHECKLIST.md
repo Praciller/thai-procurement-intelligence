@@ -4,7 +4,9 @@ This is an operator checklist, not a release approval. The project currently has
 
 ## Proposed review order
 
-`#26 → #29 → #27 → #28 → #30 → #31 → #32 → #33 → #34`.
+`#26 → #29 → #27 → #28 → #30 → #31 → #32 → #33 → #34 → #35 → #36 → #37 → #38`.
+
+Draft PRs #24 and #25 predate this stack and overlap the same evidence/search/LLM paths. Do not merge either independently or automatically; reconcile any unique fixes against the current stack, then explicitly close or supersede them after review.
 
 The base branch of every stacked PR must point to its immediate predecessor until that predecessor is merged. After each merge, check the next PR's base, changed files, mergeability and **current head SHA**. Do not rely on old CI results if head/base changes.
 
@@ -16,6 +18,8 @@ The base branch of every stacked PR must point to its immediate predecessor unti
 - [ ] Run `npm run web:test`, `npm run web:lint`, and `npm run web:build` at repository root.
 - [ ] Run `python scripts/check_repo_guardrails.py`.
 - [ ] Rerun `python -m app.jobs.evaluate_official_snapshot` from `apps/api` and ensure committed evaluation artifacts show **no unexplained drift**. The frozen benchmark has only 8 judged queries (7 positive, 1 negative) against a non-random 250-record source snapshot; do not advertise population-wide retrieval quality.
+- [ ] Confirm production dependency advisories from `npm audit --omit=dev` are addressed; review residual developer-tool advisories separately rather than forcing a breaking ESLint/Next downgrade.
+- [ ] E2E runs on pinned GitHub `ubuntu-24.04`, using preinstalled Google Chrome via `playwright.ci.config.cjs`; confirm the actual current PR head completes the browser checks. No Chromium install/download step is required in CI.
 - [ ] Review changes in `reports/official_snapshot/` and maintain the distinction between original-file checksum verification and mere database-provenance consistency.
 - [ ] Ensure stored embeddings from unrelated models or incompatible dimensions cannot influence rankings computed with the local hashing-token-v1 query encoder; a new model must bring a matched query encoder and evaluation.
 - [ ] Manually verify keyboard skip navigation, responsive search results, filters and both supported UI languages; a smoke test is not a full WCAG audit.
