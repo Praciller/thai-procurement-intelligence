@@ -34,3 +34,15 @@ Provider logs contain only provider, model, operation, attempt, duration, result
 OpenRouter's `openrouter/free` selection is intentionally nondeterministic because the service may select different free models. The router excludes it from deterministic judged evaluation. Evaluation should use the mock provider or a fixed, approved provider configuration and record its provider/model explicitly.
 
 The deterministic hash embedding used elsewhere in this project remains a zero-cost architecture/demo baseline; it is not production semantic retrieval and is unrelated to provider selection.
+
+## Shared inference budget and privacy defaults
+
+External inference remains opt-in with `ENABLE_LLM=true`. Every non-cached request that could reach an external provider reserves one global UTC-hour permit in the database. This counter is shared across PostgreSQL or SQLite app instances and updated atomically. A single permitted request can still make multiple provider attempts due to retries and failover; the cap does not count individual provider calls. The default `AI_HOURLY_REQUEST_LIMIT=30`; setting it to `0` disables external inference. When the budget is exhausted or unavailable, the API returns deterministic offline answers instead of calling another external model. A no-evidence answer or a cached summary never consumes the budget.
+
+This is a **global inference-cost safeguard**, not per-user authentication or comprehensive DDoS protection. Protect the public API separately with edge rate limiting and/or authentication as traffic grows.
+
+Raw assistant questions and generated answers are **not persisted** by default (`LOG_AI_QUERIES=false`). Enable logging only after deciding retention, access control and user disclosure. This change does not delete historical rows.
+
+Apply Alembic revision `0003_ai_hourly_budget` before enabling external inference on existing deployments.
+
+The budget guard evaluates the **entire enabled external-capable fallback chain**, not just the first selected provider. A mock-first chain that can fall through to an external provider must reserve a permit before attempting inference. After generation, `is_external` continues to describe the provider that **actually answered** (so mock responses are not labeled external). The guard remains conservative: a permitted request that ends at a mock may use a permit if an external fallback was possible.

@@ -1,13 +1,20 @@
 import { Database } from "lucide-react";
 import { EmptyState, PageHeader, Section, Stat } from "@/components/ui";
-import { formatDate, getAnalytics, getDatasetStatus, getIngestionRuns } from "@/lib/api";
+import { formatDate, getAnalyticsResult, getDatasetStatusResult, getIngestionRunsResult } from "@/lib/api";
+import { ApiUnavailable } from "@/components/api-unavailable";
 import { getDictionary, normalizeLocale } from "@/lib/i18n";
 
 export default async function DataStatusPage({ searchParams }: { searchParams?: Promise<{ lang?: string | string[] }> }) {
   const params = await searchParams;
   const locale = normalizeLocale(params?.lang);
   const dictionary = getDictionary(locale);
-  const [analytics, runs, dataset] = await Promise.all([getAnalytics(), getIngestionRuns(), getDatasetStatus()]);
+  const [analyticsResult, runsResult, datasetResult] = await Promise.all([getAnalyticsResult(), getIngestionRunsResult(), getDatasetStatusResult()]);
+  if (!analyticsResult.ok || !runsResult.ok || !datasetResult.ok) {
+    return <Section><PageHeader title={dictionary.dataStatus.title} description={dictionary.dataStatus.description} /><div className="mt-6"><ApiUnavailable locale={locale} /></div></Section>;
+  }
+  const analytics = analyticsResult.data;
+  const runs = runsResult.data;
+  const dataset = datasetResult.data;
 
   return (
     <Section>
@@ -38,7 +45,11 @@ export default async function DataStatusPage({ searchParams }: { searchParams?: 
                 ? dictionary.dataStatus.staleSnapshot
                 : dictionary.common.notAvailable,
           ],
-          [dictionary.dataStatus.checksum, dataset.quality?.checksum_verified ? dictionary.dataStatus.verified : dictionary.common.notAvailable],
+          [dictionary.dataStatus.checksum, dataset.quality?.checksum_verified === true
+              ? dictionary.dataStatus.verified
+              : dataset.quality?.checksum_verified === false
+                ? dictionary.dataStatus.notVerified
+                : dictionary.common.notAvailable],
           [dictionary.dataStatus.mappingVersion, dataset.source?.mapping_version],
         ].map(([label, value]) => (
           <div key={String(label)}>
@@ -58,7 +69,7 @@ export default async function DataStatusPage({ searchParams }: { searchParams?: 
             <table className="min-w-full text-left text-sm">
               <thead className="text-xs uppercase tracking-wide text-muted">
                 <tr>
-                  <th className="py-2 pr-4">{dictionary.dataStatus.source}</th>
+                  <th scope="col" className="py-2 pr-4">{dictionary.dataStatus.source}</th>
                   <th className="py-2 pr-4">{dictionary.dataStatus.status}</th>
                   <th className="py-2 pr-4">{dictionary.dataStatus.rows}</th>
                   <th className="py-2 pr-4">{dictionary.dataStatus.inserted}</th>

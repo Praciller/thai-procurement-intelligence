@@ -1,3 +1,5 @@
+import hashlib
+import json
 from pathlib import Path
 
 from app.models import ProcurementRecord
@@ -23,3 +25,19 @@ def question_messages(question: str, records: list[ProcurementRecord]) -> list[d
     context = "\n\n".join(format_record_context(record) for record in records)
     user = user.format(question=question, context_records=context or "No records were retrieved.")
     return [{"role": "system", "content": system.removeprefix("System:\n")}, {"role": "user", "content": user}]
+
+
+def summary_cache_version(record: ProcurementRecord) -> str:
+    """Cache by the actual rendered prompt and source identity, not a manual label.
+
+    The column is VARCHAR(40): summary-v3- plus 29 SHA-256 hex characters.
+    Both content edits and template wording changes invalidate old summaries.
+    The provider/model are separate fields in the unique cache constraint.
+    """
+    encoded = json.dumps(
+        {"content_hash": record.content_hash, "messages": summary_messages(record)},
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return f"summary-v3-{hashlib.sha256(encoded).hexdigest()[:29]}"

@@ -56,14 +56,25 @@ def _official_record_evidence(session: Session) -> tuple[dict | None, dict | Non
         "coverage_end": coverage_end.isoformat() if coverage_end else None,
         "license": record.source_license,
         "sha256": record.source_checksum,
-        "record_count_raw": count,
+        # Persisted DB rows do not establish the source-file row count.
+        "record_count_raw": None,
+        "persisted_record_count": count,
         "mapping_version": record.mapping_version,
     }
     quality = {
-        "checksum_verified": count > 0 and checksum_count == count and distinct_checksums == 1,
-        "valid_records": count,
-        "rejected_records": 0,
-        "duplicate_records": 0,
+        # Consistent stored provenance does not prove the original CSV bytes were rehashed.
+        "checksum_verified": False,
+        "provenance_consistent": count > 0 and checksum_count == count and distinct_checksums == 1,
+        "verification_method": "database_record_metadata_only",
+        "verification_note": (
+            "Stored checksums agree; original source file bytes were not rehashed."
+            if count > 0 and checksum_count == count and distinct_checksums == 1
+            else "Stored checksums disagree or are missing; original source file bytes were not rehashed."
+        ),
+        # An imported row count is not a verified count of valid CSV rows.
+        "valid_records": None,
+        "rejected_records": None,
+        "duplicate_records": None,
     }
     return source, quality
 

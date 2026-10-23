@@ -50,21 +50,21 @@ def test_hybrid_rank_fusion_is_not_dominated_by_keyword_score_magnitude(session:
         [
             ProcurementEmbedding(
                 procurement_id=keyword_heavy.id,
-                embedding_model="fixture",
+                embedding_model="hashing-token-v1",
                 embedding=[0.0, 1.0],
                 embedded_text=keyword_heavy.project_name,
                 text_hash="a" * 64,
             ),
             ProcurementEmbedding(
                 procurement_id=balanced.id,
-                embedding_model="fixture",
+                embedding_model="hashing-token-v1",
                 embedding=[1.0, 0.0],
                 embedded_text=balanced.project_name,
                 text_hash="b" * 64,
             ),
             ProcurementEmbedding(
                 procurement_id=semantic_only.id,
-                embedding_model="fixture",
+                embedding_model="hashing-token-v1",
                 embedding=[0.8, 0.6],
                 embedded_text=semantic_only.project_name,
                 text_hash="c" * 64,
@@ -148,3 +148,112 @@ def test_min_budget_zero_is_not_treated_as_missing(session: Session):
 
     assert total == 2
     assert {item.record.source_record_id for item in results} == {"zero", "paid"}
+
+
+
+def test_colloquial_motorcycle_alias_retrieves_motorcycle_not_computer(session: Session):
+    session.add_all([
+        _record("moto", "ซ่อมรถจักรยานยนต์"),
+        _record("computer", "ซ่อมคอมพิวเตอร์"),
+    ])
+    session.commit()
+
+    results = keyword_candidates(session, "ซ่อมมอเตอร์ไซค์", limit=2)
+    assert results
+    assert results[0].record.source_record_id == "moto"
+
+    filtered, count = search_records(session, {"q": "มอเตอร์ไซค์"})
+    assert count == 1
+    assert filtered[0].record.source_record_id == "moto"
+
+
+def test_hash_embedding_cannot_create_unrelated_hybrid_matches(session: Session):
+    from app.services.embeddings import MOCK_EMBEDDING_MODEL, hash_embedding
+
+    record = _record("unrelated", "ซื้อวัสดุคอมพิวเตอร์")
+    session.add(record)
+    session.flush()
+    session.add(
+        ProcurementEmbedding(
+            procurement_id=record.id,
+            embedding_model=MOCK_EMBEDDING_MODEL,
+            embedding=hash_embedding(record.project_name),
+            embedded_text=record.project_name,
+            text_hash="a" * 64,
+        )
+    )
+    session.commit()
+
+    query = "ดาวเทียมสำรวจอวกาศ"
+    assert keyword_candidates(session, query) == []
+    assert hybrid_candidates(session, query, hash_embedding(query)) == []
+
+
+def test_mixed_embedding_models_cannot_create_hash_query_false_positives(session: Session):
+    from app.services.search import semantic_candidates
+
+    record = _record("semantic-only", "fully unrelated literal terms")
+    session.add(record)
+    session.flush()
+    session.add(
+        ProcurementEmbedding(
+            procurement_id=record.id,
+            embedding_model="real-model-fixture",
+            embedding=[1.0, 0.0],
+            embedded_text=record.project_name,
+            text_hash="f" * 64,
+        )
+    )
+    session.commit()
+
+    # The public hybrid path has a local-hash query vector; it cannot rank a
+    # real-model embedding from a different vector space.
+    assert hybrid_candidates(session, "semantic query", [1.0, 0.0], limit=2) == []
+    assert semantic_candidates(session, [1.0, 0.0]) == []
+
+    # A future matching query encoder may intentionally select its own model.
+    matching = semantic_candidates(
+        session, [1.0, 0.0], embedding_model="real-model-fixture",
+    )
+    assert [item.record.source_record_id for item in matching] == ["semantic-only"]
+
+
+def test_semantic_ranking_rejects_incompatible_vector_dimensions(session: Session):
+    from app.services.search import semantic_candidates
+
+    record = _record("mismatch", "alpha beta")
+    session.add(record)
+    session.flush()
+    session.add(
+        ProcurementEmbedding(
+            procurement_id=record.id,
+            embedding_model="hashing-token-v1",
+            embedding=[1.0, 0.0],
+            embedded_text=record.project_name,
+            text_hash="d" * 64,
+        )
+    )
+    session.commit()
+
+    assert semantic_candidates(session, [1.0, 0.0, 0.0]) == []
+    assert hybrid_candidates(session, "absent term", [1.0, 0.0, 0.0]) == []
+
+
+def test_keyword_filter_treats_sql_wildcards_as_literal_text(session: Session):
+    session.add_all([
+        _record("percent", "Budget reached 100% utilization"),
+        _record("underscore", "Asset_type scanner"),
+        _record("regular", "Budget projection"),
+    ])
+    session.commit()
+
+    percent, percent_total = search_records(session, {"q": "%"})
+    underscore, underscore_total = search_records(session, {"q": "_"})
+    fake_agency, agency_total = search_records(session, {"agency": "%"})
+
+    assert percent_total == 1
+    assert [item.record.source_record_id for item in percent] == ["percent"]
+    assert underscore_total == 1
+    assert [item.record.source_record_id for item in underscore] == ["underscore"]
+    assert agency_total == 0
+    assert fake_agency == []

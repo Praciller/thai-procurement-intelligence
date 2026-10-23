@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.database import init_db
 from app.routers import analytics, assistant, dataset, export, health, ingestion, records
 
 settings = get_settings()
@@ -23,10 +22,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-@app.on_event("startup")
-def startup() -> None:
-    init_db()
 
 
 app.include_router(health.router, prefix="/api")

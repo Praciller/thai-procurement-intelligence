@@ -1,6 +1,6 @@
 import argparse
 
-from app.database import SessionLocal, init_db
+from app.database import SessionLocal
 from app.services.ingestion import import_csv_file
 
 
@@ -10,7 +10,6 @@ def main() -> None:
     parser.add_argument("--source", default="sample", help="Source name")
     args = parser.parse_args()
 
-    init_db()
     with SessionLocal() as session:
         run, counters = import_csv_file(session, args.file, source_name=args.source)
     print(

@@ -29,8 +29,36 @@ class ProviderRouter(LLMProvider):
     def __init__(self, entries: Sequence[ProviderEntry], *, deterministic_evaluation: bool = False) -> None:
         self.entries = tuple(entries)
         self.deterministic_evaluation = deterministic_evaluation
-        self.provider_name = "router"
-        self.model_name = "fallback"
+        # Start with the first eligible provider's identity so callers can look up
+        # a cached result before invoking an external provider. The identity is
+        # updated if fallback ultimately serves the request.
+        primary = next(
+            (
+                entry.provider
+                for entry in self.entries
+                if entry.config.enabled
+                and entry.config.automatic_fallback_allowed
+                and (not deterministic_evaluation or entry.config.deterministic_evaluation_allowed)
+            ),
+            None,
+        )
+        self.provider_name = primary.provider_name if primary else "router"
+        self.model_name = primary.model_name if primary else "fallback"
+
+    @property
+    def may_call_external(self) -> bool:
+        """Inspect the eligible fallback chain before reserving the shared budget.
+
+        provider_name/is_external deliberately track the chosen provider, which
+        might be mock even when a later fallback can invoke an external API.
+        """
+        return any(
+            entry.config.enabled
+            and entry.config.automatic_fallback_allowed
+            and (not self.deterministic_evaluation or entry.config.deterministic_evaluation_allowed)
+            and entry.provider.is_external
+            for entry in self.entries
+        )
 
     @property
     def provider_names(self) -> tuple[str, ...]:

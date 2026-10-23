@@ -15,6 +15,8 @@ Backend environment:
 - `CORS_ORIGINS`
 - `DATASET_MODE=synthetic|official_snapshot`
 - `ADMIN_INGESTION_TOKEN` (leave unset to disable public ingestion)
+- `ENABLE_LLM=false` by default; if enabling it, set `AI_HOURLY_REQUEST_LIMIT` and migrate to `0003_ai_hourly_budget`
+- `LOG_AI_QUERIES=false` (do not store public prompts/responses by default)
 - `OFFICIAL_SNAPSHOT_METADATA`
 - `OFFICIAL_QUALITY_REPORT`
 
@@ -74,3 +76,7 @@ uv run alembic upgrade head
 ```
 
 Do not stamp a database whose baseline schema has not been inspected.
+
+## Schema migration ownership
+
+Only Alembic creates or upgrades runtime database tables. The API and CLI import/embedding/summarization commands do **not** automatically run `Base.metadata.create_all()`. Run `uv run alembic upgrade head` using the intended `DATABASE_URL` **before** starting the API, importing data or running a worker. For Docker images, the API container entrypoint performs this migration; verify database permissions and migration logs before production release. In a pre-0003 installation, older code could precreate `ai_hourly_budget` while the recorded revision remained `0002`. Revision `0003` now accepts only the exact expected table schema; any other schema requires manual investigation. Never drop the table to make the migration succeed.

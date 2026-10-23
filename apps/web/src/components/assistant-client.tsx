@@ -55,7 +55,7 @@ export function AssistantClient({ locale = "en" }: { locale?: string }) {
           </div>
         </form>
 
-        {error ? <EmptyState title={text.unavailableTitle} body={error} /> : null}
+        {error ? <div role="alert"><EmptyState title={text.unavailableTitle} body={error} /></div> : null}
         {result ? (
           <div className="rounded-lg border border-border bg-surface p-5">
             <div className="mb-3 flex items-center gap-2">

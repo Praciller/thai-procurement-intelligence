@@ -33,12 +33,17 @@ The public summary and cited-answer paths are deterministic and require no exter
 
 ## Data ingestion and export
 
-- Public ingestion is disabled unless a server-side `ADMIN_INGESTION_TOKEN` is configured and supplied.
+- Public ingestion and the database-writing `POST /api/records/{id}/embedding` endpoint are disabled unless a server-side `ADMIN_INGESTION_TOKEN` is configured and supplied as the `X-Admin-Token` request header. Read-only search and mock assistant behavior do not require this token.
 - Uploads accept CSV content types only, stop above 2 MB, and delete temporary files after processing.
 - Automated acquisition is hard-coded to the approved `data.go.th` HTTPS URL, uses a timeout and 1 MiB response limit, validates content type, and verifies SHA-256 before import.
 - The public API does not accept arbitrary acquisition URLs or filesystem paths.
 - CSV export prefixes cells beginning with `=`, `+`, `-`, or `@` to prevent spreadsheet formula execution.
 - React escapes displayed source text.
+
+## Assistant input and optional inference limits
+
+- External-capable LLM paths validate the assembled system/user prompt, including retrieved record context, before reserving the shared hourly budget. Payloads exceeding 24,000 characters return HTTP 413 and do not contact external providers. This cap also protects mock-first chains that might fall back externally; offline-only mock responses are unaffected.
+- The Assistant accepts only typed, documented filters (`province`, `agency`, `category`, `method`, `min_budget`, `max_budget`, `date_from`, `date_to`); invalid types, unknown keys, reversed ranges, and malformed dates return HTTP 422. The global hourly budget is not per-user throttling. Leave external LLMs disabled until abuse controls and deployment threat modeling are reviewed.
 
 ## Ethics
 

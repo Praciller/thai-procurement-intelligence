@@ -2,7 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class ProcurementRecordBase(BaseModel):
@@ -45,6 +45,11 @@ class ProcurementRecordListItem(ProcurementRecordBase):
 class ProcurementRecordDetail(ProcurementRecordListItem):
     created_at: datetime
     ai_summary: str | None = None
+
+
+class RecordFacets(BaseModel):
+    provinces: list[str]
+    categories: list[str]
 
 
 class RecordsResponse(BaseModel):
@@ -97,15 +102,38 @@ class SummaryResponse(BaseModel):
 class SemanticSearchRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    query: str = Field(min_length=1)
+    query: str = Field(min_length=1, max_length=1000)
     limit: int = Field(10, ge=1, le=50)
+
+
+class AssistantFilters(BaseModel):
+    """Only explicitly supported filters may reach SQL search predicates."""
+
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    province: str | None = Field(None, max_length=120)
+    agency: str | None = Field(None, max_length=200)
+    category: str | None = Field(None, max_length=160)
+    method: str | None = Field(None, max_length=160)
+    min_budget: Decimal | None = Field(None, ge=0, le=Decimal("1000000000000000"))
+    max_budget: Decimal | None = Field(None, ge=0, le=Decimal("1000000000000000"))
+    date_from: date | None = None
+    date_to: date | None = None
+
+    @model_validator(mode="after")
+    def validate_ranges(self) -> "AssistantFilters":
+        if self.min_budget is not None and self.max_budget is not None and self.min_budget > self.max_budget:
+            raise ValueError("min_budget must not exceed max_budget")
+        if self.date_from is not None and self.date_to is not None and self.date_from > self.date_to:
+            raise ValueError("date_from must not exceed date_to")
+        return self
 
 
 class AssistantRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    question: str = Field(min_length=1)
-    filters: dict[str, Any] | None = None
+    question: str = Field(min_length=1, max_length=1000)
+    filters: AssistantFilters | None = None
     limit: int = Field(8, ge=1, le=12)
 
 

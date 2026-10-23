@@ -3,7 +3,8 @@
   "experimentalServices": {
     "web": {
       "entrypoint": "apps/web",
-      "routePrefix": "/"
+      "routePrefix": "/",
+      "framework": "nextjs"
     },
     "api": {
       "entrypoint": "apps/api/main.py",
@@ -12,7 +13,8 @@
         "data/official/metadata/dga-egp-contract-2568-250.json",
         "reports/official_snapshot/data_quality_summary.json"
       ],
-      "maxDuration": 30
+      "maxDuration": 30,
+      "framework": "fastapi"
     }
   }
 }

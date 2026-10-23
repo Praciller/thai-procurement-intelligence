@@ -19,6 +19,18 @@ RRF_K = 60
 KEYWORD_WEIGHT = 0.55
 SEMANTIC_WEIGHT = 0.45
 MIN_THAI_FUZZY_SCORE = 0.30
+LOCAL_HASH_EMBEDDING_MODEL = "hashing-token-v1"
+# Explicitly reviewed domain aliases; expand *only* the retrieval query,
+# not stored evidence or the question passed to the answer generator.
+RETRIEVAL_ALIASES = (("มอเตอร์ไซค์", "รถจักรยานยนต์"),)
+
+
+def normalize_retrieval_terms(query: str) -> str:
+    normalized = query.strip()
+    for alias, canonical in RETRIEVAL_ALIASES:
+        normalized = normalized.replace(alias, canonical)
+    return normalized
+
 ASSISTANT_QUERY_STOP_PHRASES = (
     "จากข้อมูลที่ให้เท่านั้น",
     "จากข้อมูลที่ค้นพบ",
@@ -59,9 +71,15 @@ def normalize_assistant_query(question: str) -> str:
     return " ".join(normalized.split())
 
 
+def _contains_literal(column: Any, text: str) -> Any:
+    """SQL LIKE escaping: search user-entered percent/underscore as literals."""
+    escaped = text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return column.ilike(f"%{escaped}%", escape="\\")
+
+
 def apply_filters(stmt: Select, filters: dict[str, Any]) -> Select:
     clauses = [ProcurementRecord.dataset_type == get_settings().dataset_mode]
-    if q := str(filters.get("q") or "").strip():
+    if q := normalize_retrieval_terms(str(filters.get("q") or "")):
         text_fields = (
             ProcurementRecord.project_name,
             ProcurementRecord.agency_name,
@@ -69,16 +87,14 @@ def apply_filters(stmt: Select, filters: dict[str, Any]) -> Select:
             ProcurementRecord.normalized_text,
         )
         tokens = [token for token in tokenize(q) if len(token) >= 2]
-        phrase_like = f"%{q}%"
-        token_clauses = [field.ilike(phrase_like) for field in text_fields]
+        token_clauses = [_contains_literal(field, q) for field in text_fields]
         for token in tokens:
-            like = f"%{token}%"
-            token_clauses.extend(field.ilike(like) for field in text_fields)
+            token_clauses.extend(_contains_literal(field, token) for field in text_fields)
         clauses.append(or_(*token_clauses))
     if province := filters.get("province"):
         clauses.append(ProcurementRecord.province == province)
     if agency := filters.get("agency"):
-        clauses.append(ProcurementRecord.agency_name.ilike(f"%{agency}%"))
+        clauses.append(_contains_literal(ProcurementRecord.agency_name, agency))
     if category := filters.get("category"):
         clauses.append(ProcurementRecord.procurement_category == category)
     if method := filters.get("method"):
@@ -133,7 +149,7 @@ def keyword_candidates(
     limit: int = 8,
     filters: dict[str, Any] | None = None,
 ) -> list[SearchResult]:
-    query = query.strip()
+    query = normalize_retrieval_terms(query)
     if not query:
         return []
     structured_filters = {key: value for key, value in (filters or {}).items() if key != "q"}
@@ -176,14 +192,32 @@ def semantic_candidates(
     query_embedding: list[float],
     limit: int = 8,
     filters: dict[str, Any] | None = None,
+    *,
+    embedding_model: str = LOCAL_HASH_EMBEDDING_MODEL,
 ) -> list[SearchResult]:
-    stmt = apply_filters(select(ProcurementRecord).join(ProcurementEmbedding), filters or {})
+    """Compare vectors only when encoder identity and dimensions are compatible.
+
+    All public callers currently encode query vectors with hashing-token-v1.
+    A future real semantic encoder must pass its own matching model identity.
+    """
+    stmt = apply_filters(
+        select(ProcurementRecord)
+        .join(ProcurementEmbedding)
+        .where(ProcurementEmbedding.embedding_model == embedding_model),
+        filters or {},
+    )
     results = []
     for record in session.scalars(stmt).unique().all():
-        if not record.embeddings:
+        similarities = [
+            cosine_similarity(query_embedding, embedding.embedding)
+            for embedding in record.embeddings
+            if embedding.embedding_model == embedding_model
+            and embedding.embedding is not None
+            and len(embedding.embedding) == len(query_embedding)
+        ]
+        if not similarities:
             continue
-        score = max(cosine_similarity(query_embedding, embedding.embedding or []) for embedding in record.embeddings)
-        results.append(SearchResult(record=record, score=score))
+        results.append(SearchResult(record=record, score=max(similarities)))
     return sorted(results, key=lambda item: (-(item.score or 0), *_stable_record_key(item)))[:limit]
 
 
@@ -204,8 +238,14 @@ def hybrid_candidates(
     by_id: dict[str, SearchResult] = {}
     for rank, result in enumerate(keyword_candidates(session, query, limit=limit, filters=filters), start=1):
         by_id[result.record.id] = SearchResult(record=result.record, score=_rrf_score(rank, KEYWORD_WEIGHT))
+    keyword_ids = set(by_id)
     if query_embedding:
         for rank, result in enumerate(semantic_candidates(session, query_embedding, limit=limit, filters=filters), start=1):
+            # Every public query vector is hashing-token-v1. The hash score
+            # may rerank lexical evidence, but cannot add semantic-only hits.
+            # Different encoders must never be compared against that vector.
+            if result.record.id not in keyword_ids:
+                continue
             contribution = _rrf_score(rank, SEMANTIC_WEIGHT)
             existing = by_id.get(result.record.id)
             if existing:
@@ -213,3 +253,42 @@ def hybrid_candidates(
             else:
                 by_id[result.record.id] = SearchResult(record=result.record, score=contribution)
     return sorted(by_id.values(), key=lambda item: (-(item.score or 0), *_stable_record_key(item)))[:limit]
+
+
+def grounded_local_semantic_candidates(
+    session: Session,
+    query: str,
+    query_embedding: list[float],
+    limit: int = 8,
+    filters: dict[str, Any] | None = None,
+) -> list[SearchResult]:
+    """Rerank lexical evidence with local hash vectors, never add hash-only hits.
+
+    Deterministic hashing vectors are not true semantic embeddings and may
+    collide on unrelated texts. Search results must have lexical support until
+    a separately evaluated real semantic embedding pipeline exists.
+    """
+    lexical = keyword_candidates(session, query, limit=limit, filters=filters)
+    if not lexical:
+        return []
+
+    ranked: list[SearchResult] = []
+    for result in lexical:
+        scores = [
+            cosine_similarity(query_embedding, embedding.embedding)
+            for embedding in result.record.embeddings
+            if embedding.embedding_model == LOCAL_HASH_EMBEDDING_MODEL
+            and embedding.embedding is not None
+            and len(embedding.embedding) == len(query_embedding)
+        ]
+        ranked.append(
+            SearchResult(
+                record=result.record,
+                score=max(scores) if scores else result.score,
+                exact_phrase=result.exact_phrase,
+            )
+        )
+    return sorted(
+        ranked,
+        key=lambda item: (-int(item.exact_phrase), -(item.score or 0), *_stable_record_key(item)),
+    )

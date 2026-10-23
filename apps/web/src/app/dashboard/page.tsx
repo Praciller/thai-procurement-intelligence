@@ -1,5 +1,6 @@
 import { BarList, PageHeader, RecordTable, Section, Stat } from "@/components/ui";
-import { formatMoney, getAnalytics } from "@/lib/api";
+import { formatMoney, getAnalyticsResult } from "@/lib/api";
+import { ApiUnavailable } from "@/components/api-unavailable";
 import { getDictionary, normalizeLocale } from "@/lib/i18n";
 
 export default async function DashboardPage({ searchParams }: { searchParams?: Promise<{ lang?: string | string[] }> }) {
@@ -7,7 +8,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: P
   const locale = normalizeLocale(params?.lang);
   const dictionary = getDictionary(locale);
   const tableLabels = { ...dictionary.table, ...dictionary.common };
-  const analytics = await getAnalytics();
+  const analyticsResult = await getAnalyticsResult();
+  if (!analyticsResult.ok) {
+    return <Section><PageHeader title={dictionary.dashboard.title} description={dictionary.dashboard.description} /><div className="mt-6"><ApiUnavailable locale={locale} /></div></Section>;
+  }
+  const analytics = analyticsResult.data;
 
   return (
     <Section>

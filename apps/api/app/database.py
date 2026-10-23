@@ -24,11 +24,6 @@ engine = create_engine(database_url, **_engine_args(database_url))
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
 
 
-def init_db() -> None:
-    from app import models  # noqa: F401
-
-    Base.metadata.create_all(bind=engine)
-
 
 def get_session() -> Generator[Session, None, None]:
     session = SessionLocal()

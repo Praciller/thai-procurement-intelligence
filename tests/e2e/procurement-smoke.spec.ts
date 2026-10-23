@@ -35,3 +35,28 @@ test("core procurement workflow renders and responds", async ({ page, browser })
 
   expect(consoleIssues.filter((line) => !line.includes("Download the React DevTools"))).toEqual([]);
 });
+
+
+test("keyboard navigation and localized search controls expose their state", async ({ page }) => {
+  await page.goto("http://127.0.0.1:3000/records", { waitUntil: "networkidle" });
+
+  const skipLink = page.getByRole("link", { name: "Skip to main content" });
+  await page.keyboard.press("Tab");
+  await expect(skipLink).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/#main-content$/);
+  await expect(page.locator("main#main-content")).toHaveAttribute("tabindex", "-1");
+
+  await expect(page.getByRole("link", { name: "Search", exact: true })).toHaveAttribute("aria-current", "page");
+  const keyword = page.getByRole("button", { name: "keyword", exact: true });
+  const hybrid = page.getByRole("button", { name: "hybrid", exact: true });
+  await expect(keyword).toHaveAttribute("aria-pressed", "true");
+  await hybrid.click();
+  await expect(hybrid).toHaveAttribute("aria-pressed", "true");
+  await expect(keyword).toHaveAttribute("aria-pressed", "false");
+
+  await page.goto("http://127.0.0.1:3000/records?lang=th", { waitUntil: "networkidle" });
+  await expect(page.locator("html")).toHaveAttribute("lang", "th");
+  await expect(page.getByRole("link", { name: "ข้ามไปยังเนื้อหาหลัก" })).toHaveCount(1);
+  await expect(page.getByRole("link", { name: "TH", exact: true })).toHaveAttribute("aria-current", "true");
+});

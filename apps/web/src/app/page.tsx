@@ -1,5 +1,6 @@
 import { ArrowRight, Database, Search } from "lucide-react";
-import { getAnalytics, getDatasetStatus, getRecords, formatMoney } from "@/lib/api";
+import { getAnalyticsResult, getDatasetStatusResult, getRecordsResult, formatMoney } from "@/lib/api";
+import { ApiUnavailable } from "@/components/api-unavailable";
 import { BarList, ButtonLink, DemoNotice, PageHeader, RecordTable, Section, Stat } from "@/components/ui";
 import { getDictionary, normalizeLocale, withLocale } from "@/lib/i18n";
 
@@ -7,11 +8,17 @@ export default async function Home({ searchParams }: { searchParams?: Promise<{ 
   const params = await searchParams;
   const locale = normalizeLocale(params?.lang);
   const dictionary = getDictionary(locale);
-  const [analytics, records, dataset] = await Promise.all([
-    getAnalytics(),
-    getRecords("?page_size=5&sort=budget_desc"),
-    getDatasetStatus(),
+  const [analyticsResult, recordsResult, datasetResult] = await Promise.all([
+    getAnalyticsResult(),
+    getRecordsResult("?page_size=5&sort=budget_desc"),
+    getDatasetStatusResult(),
   ]);
+  if (!analyticsResult.ok || !recordsResult.ok || !datasetResult.ok) {
+    return <Section className="py-10"><PageHeader title={dictionary.home.title} description={dictionary.home.description} /><div className="mt-6"><ApiUnavailable locale={locale} /></div></Section>;
+  }
+  const analytics = analyticsResult.data;
+  const records = recordsResult.data;
+  const dataset = datasetResult.data;
   const tableLabels = { ...dictionary.table, ...dictionary.common };
 
   return (

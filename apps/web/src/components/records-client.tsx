@@ -2,38 +2,21 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Download, Search } from "lucide-react";
-import { getApiUrl, getRecords } from "@/lib/api";
+import { getApiUrl, searchRecords } from "@/lib/api";
 import { getDictionary, normalizeLocale } from "@/lib/i18n";
-import type { ProcurementRecord, RecordsResponse } from "@/types/api";
+import type { ProcurementRecord, RecordFacets, RecordsResponse } from "@/types/api";
 import { EmptyState, RecordTable } from "@/components/ui";
 
-const syntheticProvinces = ["Bangkok", "Chiang Mai", "Phuket", "Khon Kaen", "Chonburi", "Songkhla"];
-const syntheticCategories = ["IT", "Construction", "Medical Supplies", "Education", "Utilities", "Transport", "Office Equipment"];
 const modes = ["keyword", "semantic", "hybrid"] as const;
 
 type Mode = (typeof modes)[number];
 
-export function RecordsClient({ initialRecords, locale = "en" }: { initialRecords: RecordsResponse; locale?: string }) {
+export function RecordsClient({ initialRecords, facets, locale = "en" }: { initialRecords: RecordsResponse; facets: RecordFacets; locale?: string }) {
   const normalizedLocale = normalizeLocale(locale);
   const dictionary = getDictionary(normalizedLocale);
   const text = dictionary.recordsClient;
-  const official = initialRecords.items.some((record) => !record.is_synthetic);
-  const provinces = [
-    "",
-    ...new Set(
-      official
-        ? initialRecords.items.map((record) => record.province).filter((value): value is string => Boolean(value))
-        : syntheticProvinces,
-    ),
-  ];
-  const categories = [
-    "",
-    ...new Set(
-      official
-        ? initialRecords.items.map((record) => record.procurement_category).filter((value): value is string => Boolean(value))
-        : syntheticCategories,
-    ),
-  ];
+  const provinces = ["", ...facets.provinces];
+  const categories = ["", ...facets.categories];
   const tableLabels = { ...dictionary.table, ...dictionary.common };
   const [q, setQ] = useState("");
   const [province, setProvince] = useState("");
@@ -42,24 +25,27 @@ export function RecordsClient({ initialRecords, locale = "en" }: { initialRecord
   const [sort, setSort] = useState("date_desc");
   const [data, setData] = useState(initialRecords);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
   const [isPending, startTransition] = useTransition();
 
   const query = useMemo(() => {
-    const params = new URLSearchParams({ page_size: "20", search_mode: mode, sort });
+    const params = new URLSearchParams({ page: String(page), page_size: "20", search_mode: mode, sort });
     if (q) params.set("q", q);
     if (province) params.set("province", province);
     if (category) params.set("category", category);
     return `?${params.toString()}`;
-  }, [category, mode, province, q, sort]);
+  }, [category, mode, page, province, q, sort]);
 
   useEffect(() => {
     let alive = true;
     startTransition(async () => {
       setError(null);
-      const next = await getRecords(query);
-      if (!alive) return;
-      setData(next);
-      if (!next.items.length && initialRecords.total === 0) {
+      try {
+        const next = await searchRecords(query);
+        if (!alive) return;
+        setData(next);
+      } catch {
+        if (!alive) return;
         setError(text.noApiBody);
       }
     });
@@ -79,14 +65,14 @@ export function RecordsClient({ initialRecords, locale = "en" }: { initialRecord
               <input
                 className="min-h-10 w-full bg-transparent text-sm outline-none"
                 value={q}
-                onChange={(event) => setQ(event.target.value)}
+                onChange={(event) => { setQ(event.target.value); setPage(1); }}
                 placeholder={text.keywordPlaceholder}
               />
             </span>
           </label>
           <label className="block text-sm font-medium">
             {text.province}
-            <select className="mt-2 min-h-10 w-full rounded-md border border-border bg-background px-3 text-sm" value={province} onChange={(event) => setProvince(event.target.value)}>
+            <select className="mt-2 min-h-10 w-full rounded-md border border-border bg-background px-3 text-sm" value={province} onChange={(event) => { setProvince(event.target.value); setPage(1); }}>
               {provinces.map((item) => (
                 <option key={item || "all"} value={item}>
                   {item || text.allProvinces}
@@ -96,7 +82,7 @@ export function RecordsClient({ initialRecords, locale = "en" }: { initialRecord
           </label>
           <label className="block text-sm font-medium">
             {text.category}
-            <select className="mt-2 min-h-10 w-full rounded-md border border-border bg-background px-3 text-sm" value={category} onChange={(event) => setCategory(event.target.value)}>
+            <select className="mt-2 min-h-10 w-full rounded-md border border-border bg-background px-3 text-sm" value={category} onChange={(event) => { setCategory(event.target.value); setPage(1); }}>
               {categories.map((item) => (
                 <option key={item || "all"} value={item}>
                   {item || text.allCategories}
@@ -111,7 +97,8 @@ export function RecordsClient({ initialRecords, locale = "en" }: { initialRecord
                 <button
                   key={item}
                   className={`min-h-9 rounded px-2 text-xs font-medium capitalize ${mode === item ? "bg-accent text-background" : "text-muted hover:bg-surface"}`}
-                  onClick={() => setMode(item)}
+                  onClick={() => { setMode(item); setPage(1); }}
+                  aria-pressed={mode === item}
                   type="button"
                 >
                   {text.modeLabels[item]}
@@ -121,7 +108,7 @@ export function RecordsClient({ initialRecords, locale = "en" }: { initialRecord
           </fieldset>
           <label className="block text-sm font-medium">
             {text.sort}
-            <select className="mt-2 min-h-10 w-full rounded-md border border-border bg-background px-3 text-sm" value={sort} onChange={(event) => setSort(event.target.value)}>
+            <select className="mt-2 min-h-10 w-full rounded-md border border-border bg-background px-3 text-sm" value={sort} onChange={(event) => { setSort(event.target.value); setPage(1); }}>
               <option value="date_desc">{text.sortOptions.date_desc}</option>
               <option value="date_asc">{text.sortOptions.date_asc}</option>
               <option value="budget_desc">{text.sortOptions.budget_desc}</option>
@@ -153,7 +140,16 @@ export function RecordsClient({ initialRecords, locale = "en" }: { initialRecord
         ) : error ? (
           <EmptyState title={text.noApiTitle} body={error} />
         ) : (
-          <RecordTable records={data.items as ProcurementRecord[]} labels={tableLabels} locale={normalizedLocale} />
+          <>
+            <RecordTable records={data.items as ProcurementRecord[]} labels={tableLabels} locale={normalizedLocale} />
+            {mode === "keyword" && data.total > data.page_size ? (
+              <nav aria-label="Search result pages" className="mt-4 flex items-center justify-between gap-3 text-sm">
+                <button type="button" className="focus-ring rounded-md border border-border px-3 py-2 disabled:opacity-40" disabled={isPending || page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>{text.previousPage}</button>
+                <span aria-live="polite">{text.pageOf(page, Math.ceil(data.total / data.page_size))}</span>
+                <button type="button" className="focus-ring rounded-md border border-border px-3 py-2 disabled:opacity-40" disabled={isPending || page >= Math.ceil(data.total / data.page_size)} onClick={() => setPage((current) => current + 1)}>{text.nextPage}</button>
+              </nav>
+            ) : null}
+          </>
         )}
       </section>
     </div>
