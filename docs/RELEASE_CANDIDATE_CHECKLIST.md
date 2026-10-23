@@ -4,7 +4,7 @@ This is an operator checklist, not a release approval. The project currently has
 
 ## Proposed review order
 
-`#26 → #29 → #27 → #28 → #30 → #31 → #32 → #33 → #34 → #35 → #36 → #37 → #38 → #39 → #40 → #41 → #42`.
+`#26 → #29 → #27 → #28 → #30 → #31 → #32 → #33 → #34 → #35 → #36 → #37 → #38 → #39 → #40 → #41 → #42 → #43`.
 
 Draft PRs #24 and #25 predate this stack and overlap the same evidence/search/LLM paths. Do not merge either independently or automatically; reconcile any unique fixes against the current stack, then explicitly close or supersede them after review.
 
@@ -21,6 +21,7 @@ The base branch of every stacked PR must point to its immediate predecessor unti
 - [ ] Confirm production dependency advisories from `npm audit --omit=dev` are addressed; review residual developer-tool advisories separately rather than forcing a breaking ESLint/Next downgrade.
 - [ ] E2E runs on pinned GitHub `ubuntu-24.04`, using preinstalled Google Chrome via `playwright.ci.config.cjs`; confirm the actual current PR head completes the browser checks. No Chromium install/download step is required in CI.
 - [ ] Review changes in `reports/official_snapshot/` and maintain the distinction between original-file checksum verification and mere database-provenance consistency.
+- [ ] When source/quality artifacts are absent, assert `record_count_raw=null`, `valid_records=null`, and `persisted_record_count` equals only the stored official-record count; matching stored checksums alone do not constitute raw-file verification. PR #24 is overlapped by this fix and #27, but requires explicit supersession decision before closing.
 - [ ] Ensure stored embeddings from unrelated models or incompatible dimensions cannot influence rankings computed with the local hashing-token-v1 query encoder; a new model must bring a matched query encoder and evaluation.
 - [ ] Manually verify keyboard skip navigation, responsive search results, filters and both supported UI languages; a smoke test is not a full WCAG audit.
 
