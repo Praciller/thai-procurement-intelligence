@@ -4,7 +4,7 @@ This is an operator checklist, not a release approval. The project currently has
 
 ## Proposed review order
 
-`#26 → #29 → #27 → #28 → #30 → #31 → #32 → #33 → #34 → #35 → #36 → #37 → #38`.
+`#26 → #29 → #27 → #28 → #30 → #31 → #32 → #33 → #34 → #35 → #36 → #37 → #38 → #39`.
 
 Draft PRs #24 and #25 predate this stack and overlap the same evidence/search/LLM paths. Do not merge either independently or automatically; reconcile any unique fixes against the current stack, then explicitly close or supersede them after review.
 
