@@ -41,6 +41,7 @@ The base branch of every stacked PR must point to its immediate predecessor unti
 - [ ] Deploy only after separate, explicit approval; record deployed Git SHA, environment and release time.
 - [ ] Smoke-test health/readiness, search (keyword and hash-grounded semantic), records, assistant mock, data-status provenance and CSV export in the target environment.
 - [ ] Confirm error/empty/loading states behave correctly when the API is unavailable.
+- [ ] Confirm the Home, Search, Dashboard and Data Status pages never show fabricated zero metrics or label the dataset synthetic after an API outage/unknown mode; the shared header and Assistant must also label the mode unknown until verified.
 - [ ] Monitor request errors, database errors, external-inference permit usage and abnormal response times; do not log raw user questions by default.
 - [ ] If checks fail, stop the rollout and revert the application deployment to the recorded previous SHA. Restore database from the verified backup if a schema/data rollback is truly necessary and separately approved.
 
