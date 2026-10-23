@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from secrets import compare_digest
+
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -207,9 +209,20 @@ def semantic_search(request: SemanticSearchRequest, session: Session = Depends(g
 
 
 @router.post("/{record_id}/embedding")
-def generate_record_embedding(record_id: str, session: Session = Depends(get_session)) -> dict[str, str]:
+def generate_record_embedding(
+    record_id: str,
+    session: Session = Depends(get_session),
+    x_admin_token: str | None = Header(None),
+) -> dict[str, str]:
+    settings = get_settings()
     record = session.get(ProcurementRecord, record_id)
-    if not record or record.dataset_type != get_settings().dataset_mode:
+    if not record or record.dataset_type != settings.dataset_mode:
         raise HTTPException(status_code=404, detail="Record not found")
+    # Unlike read-only retrieval, generating embeddings writes persistent data.
+    # Reuse the opt-in ingestion admin token and disable this endpoint by
+    # default. Browser-facing read/assistant/summary routes remain unchanged.
+    expected = settings.admin_ingestion_token
+    if not expected or not x_admin_token or not compare_digest(x_admin_token, expected):
+        raise HTTPException(status_code=403, detail="embedding generation is disabled")
     embedding = ensure_embedding(session, record)
     return {"id": embedding.id, "model": embedding.embedding_model}
