@@ -10,6 +10,8 @@ from app.models import AISummary, ProcurementRecord
 from app.schemas import ProcurementRecordDetail, RecordFacets, RecordsResponse, SearchMode, SemanticSearchRequest, SummaryResponse
 from app.services.embeddings import ensure_embedding, hash_embedding
 from app.services.llm.factory import get_llm_provider
+from app.services.llm.limits import enforce_external_prompt_limit
+from app.services.llm.prompts import summary_messages
 from app.services.llm.budget import protect_external_inference
 from app.services.search import grounded_local_semantic_candidates, hybrid_candidates, keyword_candidates, normalize_retrieval_terms, search_records
 
@@ -158,6 +160,7 @@ async def summarize_record(record_id: str, session: Session = Depends(get_sessio
             summary_text=cached.summary_text,
             cached=True,
         )
+    enforce_external_prompt_limit(provider, settings, summary_messages(record))
     provider = protect_external_inference(session, provider, settings)
     # On budget exhaustion, prefer a cached deterministic fallback if available.
     if provider.provider_name == "mock":
