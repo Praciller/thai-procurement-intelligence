@@ -26,6 +26,10 @@ const dictionaries = {
       demoNotice:
         "This demo uses synthetic sample records with obvious sample agency and vendor names. It does not claim facts about real agencies.",
       notAvailable: "Not available",
+      apiUnavailableTitle: "Data temporarily unavailable",
+      apiUnavailableBody: "The API did not respond, so the current dataset and metrics cannot be verified. Try again later.",
+      unknownDataset: "Dataset status unavailable",
+      unknownDatasetNote: "Unable to verify whether the active data is official or synthetic.",
       uncategorized: "Uncategorized",
       unknownAgency: "Unknown agency",
       unknownProvince: "Unknown province",
@@ -256,6 +260,10 @@ const dictionaries = {
       demoNotice:
         "เดโมนี้ใช้ระเบียนจัดซื้อจัดจ้างตัวอย่างที่สร้างขึ้นพร้อมชื่อหน่วยงานและผู้ขายแบบตัวอย่างเท่านั้น ไม่ได้อ้างข้อเท็จจริงเกี่ยวกับหน่วยงานจริง",
       notAvailable: "ไม่มีข้อมูล",
+      apiUnavailableTitle: "ไม่สามารถโหลดข้อมูลได้ชั่วคราว",
+      apiUnavailableBody: "ไม่สามารถติดต่อ API เพื่อยืนยันชุดข้อมูลและสถิติที่ใช้งานอยู่ได้ กรุณาลองใหม่ภายหลัง",
+      unknownDataset: "ไม่ทราบสถานะชุดข้อมูล",
+      unknownDatasetNote: "ยังยืนยันไม่ได้ว่าข้อมูลที่ใช้งานอยู่เป็นข้อมูลทางการหรือข้อมูลสังเคราะห์",
       uncategorized: "ไม่ระบุหมวดหมู่",
       unknownAgency: "ไม่ทราบหน่วยงาน",
       unknownProvince: "ไม่ทราบจังหวัด",
