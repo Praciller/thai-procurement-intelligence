@@ -117,3 +117,32 @@ On `pracill`, Docker is reachable and the official Supabase CLI runs via `npx --
 ### Preview isolation
 
 The protected Vercel Preview remains database-unready (readiness HTTP 503 and data endpoints HTTP 500) because there is no Preview-specific `DATABASE_URL`. No production URL was copied to Preview. The connected Neon account showed no matching procurement projects; querying Supabase development branches returned insufficient permission, so this does **not** prove that no branches exist. Use an explicitly approved, independently isolated Preview database rather than reusing production credentials.
+
+
+## Free-tier Preview database decision — 2026-10-24
+
+**No new infrastructure was created during this review.**
+
+Supabase's current Free plan includes **two active Free projects total across qualifying organizations**, but **Supabase Branching/automatic PR preview branches are a Pro-plan feature**. A second, independent Free-plan Supabase project is therefore a possible zero-subscription-cost Preview environment **only if the account has a remaining free-project slot and the selected organization is itself on the Free plan**. Do not infer capacity from the project's own Free subscription or from the CLI returning a single visible project.
+
+Before creating any project:
+1. Verify available Free slots **across all applicable organizations**, confirm the target organization and check actual creation cost with the official Supabase cost-quote tool. Obtain explicit owner approval after showing the quoted price; never create a potentially billable project by assumption.
+2. If an eligible $0 slot is available, name the new Preview project unambiguously, use a region near the existing app and **never clone production users, secrets, rows or storage** into it.
+3. Apply exactly the checked-in Alembic migrations to an empty Preview database, then import **only** the committed synthetic sample. Confirm the deployed app's Preview-only connection role can query its tables under any project-specific automatic RLS enforcement.
+4. Create **Preview-scoped only** environment variables in Vercel: a secret `DATABASE_URL` for that new database, `DATASET_MODE=synthetic`, `NEXT_PUBLIC_API_BASE_URL=/backend/api`, `ENABLE_LLM=false`, and `LOG_AI_QUERIES=false`. Never set a production secret in Preview, including through unscoped shared variables.
+5. Redeploy **Preview only**, then verify `/backend/api/health/readiness` HTTP 200 with exactly **120 synthetic rows**, `/backend/api/dataset/status` reports synthetic, read/search/assistant mock paths work, and no official records are shown. Keep Preview behind deployment protection.
+6. Monitor project status and Free limits; Free projects may **pause after inactivity**, so a Preview environment is not guaranteed to stay always-on.
+
+If the Free allocation is exhausted or the quoted cost is not $0, **stop**. The fallback is a local PostgreSQL+Playwright integration rehearsal with clearly documented limitations, not reusing the production database, paying without approval, or presenting a build-only preview as runtime verified.
+
+Sources:
+- <https://supabase.com/docs/guides/platform/billing-on-supabase>
+- <https://supabase.com/docs/guides/deployment>
+- <https://supabase.com/docs/guides/platform/manage-your-usage/branching>
+- <https://vercel.com/docs/environment-variables/manage-across-environments>
+
+## Restore-test and recovery-key ownership
+
+The application SQL archive is present, but a **successful isolated database restore has not been verified**. The archive uses Windows DPAPI for local password protection; a catastrophic loss of the workstation/profile may make the archive unusable, even if its encrypted bytes are copied elsewhere. Do not count a duplicate DPAPI-encrypted password file on another drive as a portable recovery key.
+
+The owner must choose an appropriate long-term, independently recoverable secret-storage and off-device backup destination. Do not print or transmit the generated archive password in terminal transcripts, GitHub logs or ChatGPT. Once the owner has a portable recovery method, a separately authorized operator should follow the official Supabase backup/restore procedure in an isolated PostgreSQL 17 environment, validating **data, roles, schema, Alembic revision and row counts**, and record a success or failure independently. **Do not bypass remote-tool safety restrictions** to run a restore. Until then, Gate A stays blocked.
