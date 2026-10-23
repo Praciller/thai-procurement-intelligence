@@ -130,3 +130,7 @@ export type SummaryResponse = {
   summary_text: string;
   cached: boolean;
 };
+
+export type ApiResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: string };
