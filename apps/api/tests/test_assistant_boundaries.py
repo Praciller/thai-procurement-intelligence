@@ -142,3 +142,47 @@ def test_large_local_mock_context_remains_available(
         assert response.json()["provider"] == "mock"
     finally:
         get_settings.cache_clear()
+
+
+def test_mock_first_chain_is_still_bounded_when_external_fallback_is_possible():
+    from fastapi import HTTPException
+
+    from app.config import Settings
+    from app.services.llm.limits import (
+        MAX_EXTERNAL_LLM_INPUT_CHARACTERS,
+        enforce_external_prompt_limit,
+    )
+    from app.services.llm.provider_config import ProviderConfig
+    from app.services.llm.router import ProviderEntry, ProviderRouter
+
+    def config(name: str, api_style: str) -> ProviderConfig:
+        return ProviderConfig(
+            name=name,
+            api_style=api_style,
+            base_url=None,
+            api_key_env=None,
+            model="fixture",
+            timeout=1,
+            max_retries=0,
+            enabled=True,
+            automatic_fallback_allowed=True,
+            deterministic_evaluation_allowed=True,
+        )
+
+    external = ExternalFixture()
+    router = ProviderRouter([
+        ProviderEntry(config("mock", "mock"), MockLLMProvider()),
+        ProviderEntry(config("external-fixture", "openai_compatible"), external),
+    ])
+    assert not router.is_external
+    assert router.may_call_external
+    settings = Settings(_env_file=None, enable_llm=True)
+    oversized = [{"role": "user", "content": "x" * (MAX_EXTERNAL_LLM_INPUT_CHARACTERS + 1)}]
+    with pytest.raises(HTTPException) as raised:
+        enforce_external_prompt_limit(router, settings, oversized)
+    assert raised.value.status_code == 413
+    assert external.calls == 0
+
+    # The limit measures assembled messages precisely and is inclusive.
+    exact = [{"role": "user", "content": "x" * MAX_EXTERNAL_LLM_INPUT_CHARACTERS}]
+    enforce_external_prompt_limit(router, settings, exact)
