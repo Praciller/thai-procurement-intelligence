@@ -60,7 +60,7 @@ export default async function Home({ searchParams }: { searchParams?: Promise<{ 
         </div>
       </Section>
 
-      <Section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+      <Section className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
         <div className="rounded-lg border border-border bg-surface p-5">
           <div className="mb-4 flex items-center gap-2">
             <Database size={18} className="text-accent-strong" />
@@ -72,7 +72,7 @@ export default async function Home({ searchParams }: { searchParams?: Promise<{ 
             <p className="py-10 text-sm leading-6 text-muted">{dictionary.home.noProvinceData}</p>
           )}
         </div>
-        <div>
+        <div className="min-w-0">
           <h2 className="mb-4 text-base font-semibold">{dictionary.home.topProjects}</h2>
           <RecordTable records={records.items} labels={tableLabels} locale={locale} />
         </div>

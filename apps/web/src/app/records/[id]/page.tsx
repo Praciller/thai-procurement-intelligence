@@ -43,8 +43,8 @@ export default async function RecordDetailPage({
         <Stat label={dictionary.detail.method} value={record.procurement_method || dictionary.common.notAvailable} />
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_24rem]">
-        <div className="space-y-6">
+      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
+        <div className="min-w-0 space-y-6">
           <SummaryPanel recordId={record.id} initialSummary={record.ai_summary} locale={locale} />
           <div className="rounded-lg border border-border bg-surface p-5">
             <h2 className="text-base font-semibold">{dictionary.detail.rawSourceText}</h2>
@@ -55,7 +55,7 @@ export default async function RecordDetailPage({
             <RecordTable records={similar} labels={tableLabels} locale={locale} />
           </div>
         </div>
-        <aside className="rounded-lg border border-border bg-surface p-5">
+        <aside className="min-w-0 rounded-lg border border-border bg-surface p-5">
           <div className="mb-5 rounded-md border border-border bg-background p-3 text-sm">
             <div className="font-semibold">
               {record.is_synthetic ? dictionary.common.syntheticDataset : dictionary.common.officialDataset}

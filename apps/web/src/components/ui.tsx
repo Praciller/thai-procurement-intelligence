@@ -128,7 +128,7 @@ export function RecordTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+    <div className="min-w-0 max-w-full overflow-x-auto rounded-lg border border-border bg-surface">
       <table className="min-w-full border-collapse text-left text-sm">
         <thead className="bg-surface-strong text-xs uppercase tracking-wide text-muted">
           <tr>
