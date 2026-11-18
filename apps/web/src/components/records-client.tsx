@@ -55,7 +55,7 @@ export function RecordsClient({ initialRecords, facets, locale = "en" }: { initi
   }, [initialRecords.total, query, text.noApiBody]);
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[18rem_1fr]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]">
       <aside className="rounded-lg border border-border bg-surface p-4">
         <div className="space-y-4">
           <label className="block text-sm font-medium">
@@ -125,7 +125,7 @@ export function RecordsClient({ initialRecords, facets, locale = "en" }: { initi
         </div>
       </aside>
 
-      <section aria-live="polite">
+      <section className="min-w-0" aria-live="polite">
         <div className="mb-3 flex items-center justify-between text-sm text-muted">
           <span>{isPending ? text.updatingResults : `${data.total.toLocaleString(normalizedLocale === "th" ? "th-TH" : "en-US")} ${text.records}`}</span>
           <span>{text.modeLabels[mode]}</span>
